@@ -3,7 +3,8 @@ name: Release
 # Runs when a GitHub release is published (created by release-please, see release-please.yml) or manually for an
 # existing tag. Builds once, attests the build provenance, attaches sdist/wheel to the release and publishes:
 #   - PyPI via Trusted Publishing (OIDC, environment "pypi") – only if the repository variable PUBLISH_PYPI=true,
-#   - the multi-arch container image (linux/amd64, linux/arm64) to ghcr.io/<owner>/fritzos8-mcp with SBOM + provenance.
+#   - the multi-arch container image (linux/amd64, linux/arm64) to ghcr.io/<owner>/fritzos8-mcp with SBOM + provenance,
+#   - the official MCP Registry entry (server.json, GitHub OIDC) after PyPI – only if PUBLISH_MCP_REGISTRY=true.
 on:
   release:
     types: [published]
@@ -137,3 +138,43 @@ jobs:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+  mcp-registry:
+    name: mcp-registry
+    needs: pypi
+    if: vars.PUBLISH_MCP_REGISTRY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write # GitHub OIDC login to the MCP Registry (namespace io.github.<owner>)
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - name: server.json matches the release
+        run: |
+          v="${TAG#v}"
+          test "$(jq -r .version server.json)" = "$v" && test "$(jq -r '.packages[0].version' server.json)" = "$v" \
+            || { echo "::error::server.json version does not match $TAG"; exit 1; }
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          base="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base/$archive.sigstore.json"
+          cosign verify-blob --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" "$archive"
+          tar xzf "$archive" mcp-publisher && rm -f "$archive" "$archive.sigstore.json"
+      - name: Publish to the MCP Registry
+        run: |
+          ./mcp-publisher login github-oidc
+          # PyPI can need a moment until the new release (with the mcp-name marker in its README) is visible.
+          for _ in 1 2 3 4 5; do ./mcp-publisher publish && exit 0; echo "retry in 30 s"; sleep 30; done
+          exit 1
