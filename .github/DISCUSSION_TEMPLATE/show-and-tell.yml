@@ -1,0 +1,17 @@
+title: "[Show & tell] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Show how you use fritzos8-mcp – prompts that work well, automations, setups with several boxes. Please redact
+        personal data (device names, addresses, phone numbers) from screenshots and outputs.
+  - type: textarea
+    id: story
+    attributes:
+      label: What did you build or do?
+    validations:
+      required: true
+  - type: input
+    id: box
+    attributes:
+      label: FRITZ!Box model(s) and FRITZ!OS version(s)

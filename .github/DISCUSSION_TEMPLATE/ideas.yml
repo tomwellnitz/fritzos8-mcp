@@ -1,0 +1,26 @@
+title: "[Idea] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome before they are concrete enough for a feature request. Describe the problem you want to solve –
+        the safety model (read / write with read-back / critical with plan → token → execute) applies to every new tool.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How could the server help? Which FRITZ!Box feature or interface is involved, if you know?
+    validations:
+      required: true
+  - type: checkboxes
+    id: interface
+    attributes:
+      label: Is the needed box interface documented by AVM?
+      options:
+        - label: I checked the AVM interface documents (https://fritz.com/pages/schnittstellen)
