@@ -39,9 +39,14 @@ class Box:
         assert kw["NewSourceIPAddress"] == "0.0.0.0"
         self.routes[(kw["NewDestIPAddress"], kw["NewDestSubnetMask"])] = {
             "NewGatewayIPAddress": kw["NewGatewayIPAddress"],
-            "NewEnable": "1",
+            "NewEnable": "0",  # live: a new entry is read back disabled until SetForwardingEntryEnable
             "NewType": kw["NewType"],
         }
+        return {}
+
+    def _route_enable(self, **kw: Any) -> dict[str, Any]:
+        assert kw["NewSourceIPAddress"] == "0.0.0.0"
+        self.routes[(kw["NewDestIPAddress"], kw["NewDestSubnetMask"])]["NewEnable"] = str(kw["NewEnable"])
         return {}
 
     def _route_del(self, **kw: Any) -> dict[str, Any]:
@@ -83,6 +88,7 @@ class Box:
                 ("Layer3Forwarding1", "GetSpecificForwardingEntry"): self._route_get,
                 ("Layer3Forwarding1", "AddForwardingEntry"): self._route_add,
                 ("Layer3Forwarding1", "DeleteForwardingEntry"): self._route_del,
+                ("Layer3Forwarding1", "SetForwardingEntryEnable"): self._route_enable,
                 ("Layer3Forwarding1", "GetDefaultConnectionService"): {
                     "NewDefaultConnectionService": "1.WANPPPConnection.1"
                 },

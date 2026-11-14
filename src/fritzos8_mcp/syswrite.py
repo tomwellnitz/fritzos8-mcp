@@ -274,13 +274,37 @@ class SystemWriter:
             NewInterface=iface,
             NewForwardingMetric=metric,
         )
+        # Live (FRITZ!OS 8.26): a new entry is read back with Enable=0 – activate it explicitly
+        # (AVM doc: Layer3Forwarding SetForwardingEntryEnable, source address/mask 0.0.0.0).
+        enable_error = None
+        try:
+            self.tr064.call(
+                L3,
+                "SetForwardingEntryEnable",
+                NewDestIPAddress=dest,
+                NewDestSubnetMask=mask,
+                NewSourceIPAddress="0.0.0.0",  # noqa: S104
+                NewSourceSubnetMask="0.0.0.0",  # noqa: S104
+                NewEnable=1,
+            )
+        except FritzError as exc:
+            enable_error = f"{type(exc).__name__}: {exc}"
         after = self._route(dest, mask)
-        return {
+        active = after is not None and after.get("gateway") == gw and bool(after.get("enabled"))
+        out: dict[str, Any] = {
             "route": {**params, "network": str(net)},
             "changed": True,
-            "verified": after is not None and after.get("gateway") == gw,
+            "verified": active,
             "read_back": after,
         }
+        if not active:
+            out["hint"] = (
+                "Route angelegt, aber nicht als aktiv zurückgelesen – in der Web-UI "
+                "(Heimnetz > Netzwerk > Statische Routingtabelle) prüfen."
+            )
+        if enable_error:
+            out["enable_error"] = enable_error
+        return out
 
     def static_route_delete_plan(self, destination: str, netmask: str) -> dict[str, Any]:
         self.gate.require(Tier.CRITICAL)
