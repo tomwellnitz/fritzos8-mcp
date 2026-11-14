@@ -1,0 +1,44 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.tomwellnitz/fritzos8-mcp",
+  "title": "FRITZ!OS 8",
+  "description": "FRITZ!Box on FRITZ!OS 8: diagnostics, security audit, devices, Wi-Fi, phone, smart home",
+  "repository": {
+    "url": "https://github.com/tomwellnitz/fritzos8-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "fritzos8-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "FRITZ_HOST",
+          "description": "Host name or IP of the FRITZ!Box (default fritz.box)",
+          "isRequired": false
+        },
+        {
+          "name": "FRITZ_USER",
+          "description": "FRITZ!Box user for the server (dedicated user recommended)",
+          "isRequired": true
+        },
+        {
+          "name": "FRITZ_PASSWORD",
+          "description": "Password of that user (alternatively FRITZ_PASSWORD_FILE or the OS keychain)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "FRITZ_ALLOW_WRITE",
+          "description": "Set to 1 to enable write tools (every write is read back)",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}
