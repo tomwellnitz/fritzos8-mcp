@@ -8,7 +8,7 @@ RUN      := $(UV) run --frozen
 IMAGE    ?= fritzos8-mcp:dev
 SNAPSHOT ?= ../fritzos8-mcp-public
 
-.PHONY: help setup sync lint format typecheck test test-live docs-check docs docs-serve build docker audit \
+.PHONY: help setup sync lint format typecheck test test-live docs-check docs docs-serve demo build docker audit \
         pre-commit check snapshot clean
 
 help: ## Show this help
@@ -46,6 +46,9 @@ docs: ## Build the documentation website (mkdocs --strict) into site/
 
 docs-serve: ## Serve the documentation website locally with live reload
 	$(RUN) --group docs mkdocs serve
+
+demo: ## Re-record the README demo GIF docs/demo.gif from docs/demo.tape (needs vhs; fake box, no network)
+	vhs docs/demo.tape
 
 build: ## Build sdist + wheel into dist/ and check the metadata
 	rm -rf dist

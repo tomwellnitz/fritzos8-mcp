@@ -13,6 +13,8 @@
 
 **Let your AI assistant run your FRITZ!Box – safely.** An [MCP](https://modelcontextprotocol.io) server for AVM FRITZ!Box routers on FRITZ!OS 8: diagnose slow internet, audit security, clean up the device list, manage guest Wi-Fi, telephony and smart home – read-only by default, and every change is verified.
 
+![Demo: network doctor, security check and the plan → token → execute safety model](docs/demo.gif)
+
 ## What you can ask
 
 > **"Why is my internet slow tonight?"**
