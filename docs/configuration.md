@@ -82,28 +82,9 @@ Without `FRITZ_BOXES` the single-box settings above apply (box name `default`). 
 
 ## Client setup
 
-**Claude Code**
+Installation (uv), password storage per OS and copy-ready entries for Claude Code, Claude Desktop, Cursor, VS Code, Windsurf, Zed, Cline, Continue, Codex CLI, Gemini CLI, LM Studio, Docker and the HTTP transport on macOS, Windows and Linux: [clients.md](clients.md).
 
-```bash
-claude mcp add fritzos8 -s user -e FRITZ_HOST=fritz.box -e FRITZ_USER=<user> -- \
-  uvx --from 'fritzos8-mcp[keyring]' fritzos8-mcp
-```
-
-**Claude Desktop, Cursor and other clients** (`mcpServers` JSON):
-
-```json
-{
-  "mcpServers": {
-    "fritzos8": {
-      "command": "uvx",
-      "args": ["--from", "fritzos8-mcp[keyring]", "fritzos8-mcp"],
-      "env": { "FRITZ_HOST": "fritz.box", "FRITZ_USER": "<user>" }
-    }
-  }
-}
-```
-
-**macOS keychain helper scripts.** `scripts/fritzos8-mcp-start.sh` and `scripts/fritzos8-mcp-multi-start.sh` read user and password from the macOS keychain (`security add-generic-password -s <service> -a <user> -w`) and pass them to the server through the environment only:
+**macOS keychain helper scripts (macOS only).** `scripts/fritzos8-mcp-start.sh` and `scripts/fritzos8-mcp-multi-start.sh` read user and password from the macOS keychain (`security add-generic-password -s <service> -a <user> -w`) and pass them to the server through the environment only:
 
 ```bash
 claude mcp add fritzos8 -s user -- scripts/fritzos8-mcp-start.sh 192.0.2.1 fritzos8-mcp-home
