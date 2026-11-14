@@ -17,8 +17,10 @@ uvx --from 'fritzos8-mcp[keyring]' keyring set fritzos8-mcp <benutzer>
 
 ```bash
 claude mcp add fritzos8 -s user \
-  -e FRITZ_HOST=fritz.box -e FRITZ_USER=<benutzer> -- uvx fritzos8-mcp
+  -e FRITZ_HOST=fritz.box -e FRITZ_USER=<benutzer> -- uvx --from 'fritzos8-mcp[keyring]' fritzos8-mcp
 ```
+
+Andere Clients sowie Windows/Linux: [MCP-Clients](clients.md).
 
 Danach `setup_check` aufrufen: prüft TR-064, Rechte, Zusatzbestätigung und Erreichbarkeit der Schnittstellen und sagt, welche Tools wegen fehlender Rechte nicht funktionieren.
 

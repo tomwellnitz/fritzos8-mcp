@@ -40,6 +40,7 @@ plugins:
           nav_translations:
             Start: Home
             Schnellstart: Quick start
+            MCP-Clients: MCP clients
             Sicherheit: Security
             Tool-Referenz: Tool reference
             Rechte: Permissions
@@ -60,6 +61,7 @@ markdown_extensions:
 nav:
   - Start: index.md
   - Schnellstart: quickstart.md
+  - MCP-Clients: clients.md
   - Sicherheit: security.md
   - Tool-Referenz: tools.md
   - Home Assistant: home-assistant.md
