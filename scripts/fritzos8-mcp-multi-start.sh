@@ -46,4 +46,4 @@ done
 
 export FRITZ_BOXES="${(j:,:)NAMEN}"
 unset FRITZ_HOST FRITZ_USER FRITZ_PASSWORD FRITZ_PASSWORD_FILE
-exec uv run --directory "$REPO" --frozen --no-dev --quiet fritzos8-mcp
+exec uv run --directory "$REPO" --frozen --quiet fritzos8-mcp

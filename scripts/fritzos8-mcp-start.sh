@@ -29,4 +29,4 @@ fi
 
 export FRITZ_HOST="$HOST" FRITZ_USER="$BENUTZER" FRITZ_PASSWORD="$PASSWORT"
 unset PASSWORT
-exec uv run --directory "$REPO" --frozen --no-dev --quiet fritzos8-mcp
+exec uv run --directory "$REPO" --frozen --quiet fritzos8-mcp
