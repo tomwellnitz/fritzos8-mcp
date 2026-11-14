@@ -1,0 +1,128 @@
+[project]
+name = "fritzos8-mcp"
+version = "0.1.0"
+description = "Platform MCP server for AVM FRITZ!Box with FRITZ!OS 8 (TR-064 + /api/v0 REST) with tiered write safety"
+readme = "README.md"
+authors = [{ name = "Tom Wellnitz" }]
+maintainers = [{ name = "Tom Wellnitz" }]
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "fritzbox",
+    "fritz-box",
+    "fritzos",
+    "tr-064",
+    "avm",
+    "router",
+    "home-assistant",
+    "smart-home",
+    "llm",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: No Input/Output (Daemon)",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Natural Language :: German",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Home Automation",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Networking :: Monitoring",
+    "Typing :: Typed",
+]
+requires-python = ">=3.12"
+dependencies = [
+    "defusedxml>=0.7.1",
+    "fritzconnection>=1.15.1",
+    "httpx>=0.28.1",
+    "mcp>=2.3,<3",
+    "pydantic>=2.14.3",
+    "pyyaml>=6.0.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/tomwellnitz/fritzos8-mcp"
+Documentation = "https://github.com/tomwellnitz/fritzos8-mcp/blob/main/docs/TOOLS.md"
+Repository = "https://github.com/tomwellnitz/fritzos8-mcp"
+Changelog = "https://github.com/tomwellnitz/fritzos8-mcp/blob/main/CHANGELOG.md"
+Issues = "https://github.com/tomwellnitz/fritzos8-mcp/issues"
+Security = "https://github.com/tomwellnitz/fritzos8-mcp/security/policy"
+
+[project.scripts]
+fritzos8-mcp = "fritzos8_mcp:main"
+fritzos8-collector = "fritzos8_mcp.history:collector_main"
+fritzos8-anonymize = "fritzos8_mcp.anonymize:cli"
+
+[project.optional-dependencies]
+qr = [
+    "segno>=1.6",
+]
+mqtt = [
+    "paho-mqtt>=2.1",
+]
+keyring = [
+    "keyring>=25",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.15,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.1",
+    "pip-audit>=2.10.1",
+    "pre-commit>=4.7.0",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "respx>=0.23.1",
+    "ruff>=0.17.5",
+    "segno>=1.6",
+    "twine>=7.0.0",
+    "types-defusedxml>=0.7.0.20260504",
+    "types-pyyaml>=6.0.12.20261113",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.8.1",
+    "mkdocs-static-i18n>=1.3.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-q"
+markers = ["live: liest von einer echten FRITZ!Box (nur mit FRITZ_LIVE_TEST=1)"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S104", "S105", "S106", "B017", "RUF012"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["fritzos8_mcp"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["fritzconnection.*"]
+ignore_missing_imports = true

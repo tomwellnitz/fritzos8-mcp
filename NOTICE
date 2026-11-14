@@ -1,0 +1,97 @@
+fritzos8-mcp
+Copyright (c) 2026 Tom Wellnitz
+Licensed under the MIT License (see LICENSE).
+
+This project contains code adapted from, or is informed by, the following
+MIT-licensed projects. Their copyright notices and the MIT permission notice
+apply to the respective portions.
+
+-------------------------------------------------------------------------------
+1. Schimmilab/fritzbox-mcp-server — MIT License, Copyright (c) 2026 Schimmilab
+   https://github.com/Schimmilab/fritzbox-mcp-server
+
+   Adapted code:
+   - src/fritzos8_mcp/redact.py: text redaction `redact()` (SID patterns,
+     URL credentials, URL/HTML-encoded secret variants, minimum secret length)
+     from src/fritzbox_mcp/redact.py; extended with structured/field redaction,
+     AVM-SID header and login-response patterns and a logging filter.
+   - src/fritzos8_mcp/security.py: `PlanStore` (one-time plan/execute tokens bound
+     to action + parameters + target identity, 5 min TTL, thread lock) from
+     src/fritzbox_mcp/write.py.
+   Adopted concepts (own implementation):
+   - Environment-gated write/critical tiers, plan → token → execute flow,
+     consequence texts for reboot/reconnect, WANIPConn → WANPPPConnection fallback.
+
+2. gr9driver/fritz-mesh-mcp — MIT License, Copyright (c) 2026 James Calvert
+   https://github.com/gr9driver/fritz-mesh-mcp
+
+   Used as a reference for the login_sid.lua version-2 flow (PBKDF2 with MD5
+   fallback). The implementation in src/fritzos8_mcp/auth.py was written after
+   AVM's technical note and is verified against AVM's published test vectors.
+   Its documented caveat that partial radio changes via /api/v0 can reset
+   channel/mode fields is the reason src/fritzos8_mcp/wlan.py uses TR-064
+   SetEnable instead (no code taken).
+
+3. the78mole/fritzmoles-mcp — MIT License, Copyright (c) 2026 Daniel Glaser
+   https://github.com/the78mole/fritzmoles-mcp
+
+   Adopted concept (own implementation): a narrow `Protocol` for the
+   fritzconnection object plus an injectable connection factory, so all TR-064
+   logic is testable without a real box.
+   Adapted code:
+   - src/fritzos8_mcp/telephony.py: call list / TAM list / TAM message parsers,
+     the call type table, `parse_fritz_datetime`, `parse_duration_minutes` and the
+     query helper for the call list URL, from src/fritzmoles_mcp/parsers.py and
+     client.py; switched to defusedxml, reduced to the returned fields (recording
+     paths dropped). The structure of the test documents in
+     tests/test_telephony.py follows its fixtures (numbers replaced).
+
+4. kbr/fritzconnection — MIT License, Copyright (c) Klaus Bremer
+   https://github.com/kbr/fritzconnection
+
+   Runtime dependency (TR-064 / SOAP / SCPD). Not vendored.
+   Adopted convention (own implementation): the guest WLAN fallback "highest
+   WLANConfiguration service" from fritzconnection.lib.fritzwlan.FritzGuestWLAN.
+
+-------------------------------------------------------------------------------
+Own code ported from TypeScript:
+   The /api/v0 landevice client (list, static DHCP, friendly_name, delete), the
+   two-name rename logic and get_lan_dns are Python ports of the author's own
+   extensions to a local TypeScript MCP server. No code of the third-party base
+   of that server was taken over.
+
+Runtime data (not bundled):
+   Manufacturer names come from the IEEE Registration Authority MA-L registry
+   (https://standards-oui.ieee.org/oui/oui.csv), downloaded at runtime and
+   cached locally. No vendor database (e.g. GPL-licensed Wireshark "manuf") is
+   included in this project.
+
+Endpoint hint only (no code taken):
+   Meine-smarte-Welt/fritzbox_netzwerk (README states MIT, but the repository
+   has no license file) documents the /api/v0/generic/dnscfg and
+   /api/v0/generic/ipv6 field names used read-only in src/fritzos8_mcp/dns.py.
+
+No code was copied from repositories without a license file or with a
+proprietary license (e.g. dimitree2k/fritzbox-mcp, maxmeis/fritzbox-mcp,
+ghbalf/mcp-fritzbox, kambriso).
+
+-------------------------------------------------------------------------------
+MIT permission notice (applies to the portions listed above):
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

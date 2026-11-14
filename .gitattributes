@@ -1,0 +1,15 @@
+# Normalise line endings: LF in the repository and in working copies on every platform.
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.py   text eol=lf
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.svg  text eol=lf
+
+# GitHub language statistics: documentation and the website are not code; the lock file is generated.
+docs/**        linguist-documentation
+website/**     linguist-documentation
+uv.lock        linguist-generated
+docs/TOOLS.md  linguist-generated

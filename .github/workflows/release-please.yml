@@ -1,0 +1,51 @@
+name: release-please
+
+# On every push to main release-please updates a release PR ("chore: release x.y.z") with the next SemVer version
+# (pyproject.toml, src/fritzos8_mcp/__init__.py, uv.lock, HA add-on) and the CHANGELOG generated from the Conventional
+# Commits. Merging that PR creates the tag vX.Y.Z and the GitHub release, which triggers release.yml (PyPI + GHCR).
+#
+# Secret RELEASE_PLEASE_TOKEN (fine-grained PAT: contents + pull requests read/write on this repository) is needed so
+# that the release PR runs the required CI checks and the published release triggers release.yml – events created
+# with the default GITHUB_TOKEN do not start other workflows. Without it, run release.yml manually for the tag.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: release-please
+    # private development repository: no releases
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Check token
+        env:
+          HAS_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::warning::RELEASE_PLEASE_TOKEN not set – release PR gets no CI and release.yml must be started manually."
+          fi
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+      - name: Summary
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: echo "Released $TAG – release.yml publishes PyPI and GHCR." >> "$GITHUB_STEP_SUMMARY"

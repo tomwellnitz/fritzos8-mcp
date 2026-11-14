@@ -1,0 +1,28 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+
+# Secrets – never commit
+.env
+.env.*
+*.password
+
+# Local agent context with private details (boxes, IPs, keychain names)
+CLAUDE.local.md
+docs/vendor/
+site/
+.private-patterns
+.audit-requirements.txt

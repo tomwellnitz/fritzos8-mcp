@@ -1,0 +1,32 @@
+name: Documentation
+description: Something in the docs is wrong, missing or unclear
+title: "docs: "
+labels: ["type/docs", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For usage questions please use [Discussions → Q&A](https://github.com/tomwellnitz/fritzos8-mcp/discussions/categories/q-a).
+        This form is for problems **in the documentation** (README, docs/, website, tool descriptions).
+  - type: input
+    id: where
+    attributes:
+      label: Where?
+      placeholder: "README.md › Quick start, docs/TOOLS.md › wan_status, website page …"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording (optional)
+  - type: input
+    id: model
+    attributes:
+      label: FRITZ!Box model and FRITZ!OS version (if relevant)
+      placeholder: "FRITZ!Box 7530 AX, 8.20"

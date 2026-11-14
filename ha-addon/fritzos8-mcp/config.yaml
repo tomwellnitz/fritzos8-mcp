@@ -1,0 +1,35 @@
+name: FRITZ!OS 8 MCP
+version: "0.1.0" # x-release-please-version
+slug: fritzos8_mcp
+description: Messreihe und Alarme der FRITZ!Box als HA-Entitäten (MQTT), optional MCP-Server über HTTP mit Token
+url: https://github.com/tomwellnitz/fritzos8-mcp
+arch: [aarch64, amd64]
+init: false
+startup: application
+boot: auto
+services:
+  - mqtt:want
+ports:
+  8765/tcp: null
+ports_description:
+  8765/tcp: MCP über Streamable HTTP (nur mit Token, nur im Heimnetz/VPN)
+options:
+  fritz_host: fritz.box
+  fritz_user: ""
+  fritz_password: ""
+  interval_s: 300
+  history_days: 30
+  alerts: true
+  mcp_http: false
+  mcp_http_token: ""
+  allow_write: false
+schema:
+  fritz_host: str
+  fritz_user: str
+  fritz_password: password
+  interval_s: int(60,3600)
+  history_days: int(1,366)
+  alerts: bool
+  mcp_http: bool
+  mcp_http_token: password?
+  allow_write: bool

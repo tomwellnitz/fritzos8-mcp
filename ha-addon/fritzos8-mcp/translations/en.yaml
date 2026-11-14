@@ -1,0 +1,10 @@
+configuration:
+  fritz_host: {name: FRITZ!Box address, description: e.g. fritz.box}
+  fritz_user: {name: FRITZ!Box user, description: Dedicated user with the required rights (setup_check)}
+  fritz_password: {name: Password}
+  interval_s: {name: Measurement interval (s)}
+  history_days: {name: Retention (days)}
+  alerts: {name: Check and send alerts}
+  mcp_http: {name: MCP server over HTTP, description: Home network/VPN only; token required}
+  mcp_http_token: {name: Bearer token (at least 32 characters)}
+  allow_write: {name: Allow write tools (HTTP MCP)}

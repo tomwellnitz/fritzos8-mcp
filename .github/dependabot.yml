@@ -1,0 +1,61 @@
+# Dependency updates via Dependabot (GitHub-native, no third-party app with repository access).
+# Security updates arrive immediately once "Dependabot security updates" is enabled (scripts/github_setup.sh).
+# Commit messages / PR titles are Conventional Commits ("build(deps): …", "ci(deps): …") so the PR title check passes;
+# release-please hides build/ci entries from the changelog.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 5
+    groups:
+      python-minor-patch:
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    labels: ["type/dependencies", "area/build"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Europe/Berlin"
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels: ["type/dependencies", "area/ci"]
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Europe/Berlin"
+    groups:
+      docker:
+        patterns: ["*"]
+    ignore:
+      # the image deliberately runs the oldest supported Python; only digest/patch updates
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    labels: ["type/dependencies", "area/docker"]
+
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    labels: ["type/dependencies", "area/build"]

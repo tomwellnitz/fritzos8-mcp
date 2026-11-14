@@ -1,0 +1,70 @@
+name: Bug report
+description: Something does not work as documented
+title: "bug: "
+labels: ["type/bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Do not post** passwords, session IDs (SID), Wi-Fi keys, tokens, serial numbers,
+        MAC/IP addresses, device names or phone numbers – anonymize output with `fritzos8-anonymize`.
+        Security vulnerabilities must be reported privately (see SECURITY.md), not here.
+  - type: input
+    id: version
+    attributes:
+      label: fritzos8-mcp version
+      description: Output of `fritzos8-mcp --version` (or the commit if you run from source).
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: FRITZ!Box model
+      placeholder: "FRITZ!Box 7590 AX"
+    validations:
+      required: true
+  - type: input
+    id: fritzos
+    attributes:
+      label: FRITZ!OS version
+      description: "System > Update in the web UI, or the `system_info` tool."
+      placeholder: "8.20"
+    validations:
+      required: true
+  - type: dropdown
+    id: access
+    attributes:
+      label: Internet access
+      options: [DSL, Cable, Fibre, LTE/5G, IP client behind another router, other]
+  - type: dropdown
+    id: client
+    attributes:
+      label: MCP client / transport
+      options: [Claude Code, Claude Desktop, other MCP client (stdio), Streamable HTTP, container (Docker), other]
+  - type: input
+    id: tool
+    attributes:
+      label: Affected tool(s)
+      placeholder: "e.g. wan_status"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened and what did you expect?
+      description: Include the error (`type`/`message`/`hint`) with anonymized values.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. FRITZ_ALLOW_WRITE=1 …
+        2. call tool … with …
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I did not include passwords, keys, tokens, serial numbers, MAC/IP addresses, device names or phone numbers.
+          required: true

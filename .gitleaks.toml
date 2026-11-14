@@ -1,0 +1,14 @@
+# gitleaks configuration (pre-commit hook and .github/workflows/security.yml): default rules plus a narrow allowlist
+# for documented false positives. Never allowlist whole files with real data.
+title = "fritzos8-mcp gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documented false positives: CLI hint text and fixed dummy SIDs in redaction tests"
+regexTarget = "line"
+regexes = [
+  '''Neues Token: fritzos8-mcp --generate-token''',
+  '''sid=%s", SECRET, "0123abcd4567ef89"''',
+]

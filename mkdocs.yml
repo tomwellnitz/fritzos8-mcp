@@ -1,0 +1,68 @@
+# Dokumentations-Website (DE/EN). Lokal bauen/ansehen – NICHT automatisch deployen:
+#   uvx --with mkdocs-material --with mkdocs-static-i18n mkdocs serve
+#   uvx --with mkdocs-material --with mkdocs-static-i18n mkdocs build --strict
+site_name: fritzos8-mcp
+site_description: MCP server for AVM FRITZ!Box with FRITZ!OS 8 – tiered write safety, read-back, redaction
+repo_url: https://github.com/tomwellnitz/fritzos8-mcp
+docs_dir: website
+site_dir: site
+strict: true
+
+theme:
+  name: material
+  language: de
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/weather-night, name: Dunkel}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/weather-sunny, name: Hell}
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      languages:
+        - locale: de
+          name: Deutsch
+          default: true
+          build: true
+        - locale: en
+          name: English
+          build: true
+          nav_translations:
+            Start: Home
+            Schnellstart: Quick start
+            Sicherheit: Security
+            Tool-Referenz: Tool reference
+            Rechte: Permissions
+            Kompatibilität: Compatibility
+            Fernverwaltung: Remote access
+            Community-Fixtures: Community fixtures
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+
+nav:
+  - Start: index.md
+  - Schnellstart: quickstart.md
+  - Sicherheit: security.md
+  - Tool-Referenz: tools.md
+  - Home Assistant: home-assistant.md
+  - Fernverwaltung: remote.md
+  - Community-Fixtures: fixtures.md
+  - Kompatibilität: COMPATIBILITY.md

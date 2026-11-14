@@ -1,0 +1,32 @@
+{
+ "fixture": {
+  "name": "example-tr064-hosts-GetGenericHostEntry",
+  "kind": "tr064",
+  "model": "FRITZ!Box 7590",
+  "fritzos": "8.20",
+  "anonymized_with": "fritzos8-anonymize",
+  "replaced": {
+   "ipv4_private": 2,
+   "mac": 2,
+   "name": 2
+  }
+ },
+ "data": [
+  {
+   "NewHostName": "Gerät 1",
+   "NewIPAddress": "192.0.2.1",
+   "NewMACAddress": "AA:BB:CC:00:00:01",
+   "NewInterfaceType": "802.11",
+   "NewActive": true,
+   "NewLeaseTimeRemaining": 0
+  },
+  {
+   "NewHostName": "Gerät 2",
+   "NewIPAddress": "192.0.2.2",
+   "NewMACAddress": "AA:BB:CC:00:00:02",
+   "NewInterfaceType": "Ethernet",
+   "NewActive": false,
+   "NewLeaseTimeRemaining": 0
+  }
+ ]
+}

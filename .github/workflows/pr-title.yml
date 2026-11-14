@@ -1,0 +1,44 @@
+name: PR title
+
+# PRs are squash-merged, so the PR title becomes the commit message on main and drives release-please.
+# It must be a Conventional Commit: <type>[(scope)][!]: <description>. Required status check: pr-title.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-title:
+    name: pr-title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6 # v6.1.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          # keep in sync with .pre-commit-config.yaml (conventional-pre-commit) and release-please-config.json
+          types: |
+            feat
+            fix
+            docs
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+            style
+          requireScope: false
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject "{subject}" of the PR title must start with a lowercase letter, e.g. "feat: add wlan_status tool".

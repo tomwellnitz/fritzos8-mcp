@@ -1,0 +1,98 @@
+# Repository labels – applied idempotently by scripts/github_setup.sh (name, color without '#', description).
+# type/*: what kind of change; area/*: which part; priority/*: urgency.
+- name: type/bug
+  color: "d73a4a"
+  description: Something does not work as documented
+- name: type/feature
+  color: "a2eeef"
+  description: New tool or capability
+- name: type/enhancement
+  color: "84b6eb"
+  description: Improvement of an existing tool or behaviour
+- name: type/compatibility
+  color: "fbca04"
+  description: Report or fix for a specific FRITZ!Box model / FRITZ!OS version
+- name: type/docs
+  color: "0075ca"
+  description: Documentation
+- name: type/question
+  color: "d876e3"
+  description: Question or support request
+- name: type/security
+  color: "b60205"
+  description: Security hardening (vulnerabilities are reported privately, see SECURITY.md)
+- name: type/dependencies
+  color: "0366d6"
+  description: Dependency update
+- name: type/chore
+  color: "ededed"
+  description: Maintenance, tooling, refactoring
+- name: area/tr064
+  color: "c5def5"
+  description: TR-064 (SOAP) interface and curated TR-064 tools
+- name: area/api-v0
+  color: "c5def5"
+  description: Unofficial /api/v0 REST API of the web UI
+- name: area/smarthome
+  color: "c5def5"
+  description: AHA-HTTP interface and Smart Home REST API
+- name: area/telephony
+  color: "c5def5"
+  description: Calls, answering machines, phone books
+- name: area/wifi
+  color: "c5def5"
+  description: Wi-Fi, guest Wi-Fi, mesh
+- name: area/monitoring
+  color: "c5def5"
+  description: Measurement series, alerts, diagnostics
+- name: area/safety-model
+  color: "c5def5"
+  description: Tiers, plan/token/execute, elicitation, redaction
+- name: area/transport
+  color: "c5def5"
+  description: stdio / Streamable HTTP transport
+- name: area/docs
+  color: "c5def5"
+  description: README, docs/, website
+- name: area/build
+  color: "c5def5"
+  description: Packaging, dependencies, dev tooling
+- name: area/ci
+  color: "c5def5"
+  description: GitHub Actions workflows
+- name: area/docker
+  color: "c5def5"
+  description: Container image
+- name: priority/critical
+  color: "b60205"
+  description: Breaks core functionality or safety – fix immediately
+- name: priority/high
+  color: "d93f0b"
+  description: Important, next release
+- name: priority/medium
+  color: "fbca04"
+  description: Normal priority
+- name: priority/low
+  color: "0e8a16"
+  description: Nice to have
+- name: good first issue
+  color: "7057ff"
+  description: Good for newcomers
+- name: help wanted
+  color: "008672"
+  description: Extra attention is needed
+- name: needs-live-test
+  color: "f9d0c4"
+  description: Only tested against mocks – needs verification on a real box
+- name: safety
+  color: "e11d21"
+  description: Touches write/critical actions or secret handling – review the safety model
+- name: needs-triage
+  color: "ededed"
+  description: New issue, not yet triaged
+- name: "autorelease: pending"
+  color: "ededed"
+  description: release-please release PR (pending)
+- name: "autorelease: tagged"
+  color: "ededed"
+  description: release-please release PR (released)

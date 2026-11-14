@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability (private)
+    url: https://github.com/tomwellnitz/fritzos8-mcp/security/advisories/new
+    about: Never report vulnerabilities in public issues – see SECURITY.md.
+  - name: Ask a question / get help
+    url: https://github.com/tomwellnitz/fritzos8-mcp/discussions/categories/q-a
+    about: Setup and usage questions belong in GitHub Discussions.
+  - name: Ideas and general discussion
+    url: https://github.com/tomwellnitz/fritzos8-mcp/discussions
+    about: Not sure whether it is a bug or a feature? Start a discussion.

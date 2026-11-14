@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a new tool or an improvement
+title: "feat: "
+labels: ["type/feature", "needs-triage"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What do you want to achieve?
+      description: Describe the use case, not only the solution.
+    validations:
+      required: true
+  - type: input
+    id: interface
+    attributes:
+      label: Box interface (if known)
+      placeholder: "TR-064 Service:Action, AHA command, Smart Home REST endpoint, /api/v0 path"
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Safety tier you expect
+      description: See the safety model in the README.
+      options: [read, write (read back), critical (plan → token → execute), not sure]
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risk
+      description: Can the action disturb the network, telephony or internet access, or expose secrets?
+  - type: input
+    id: model
+    attributes:
+      label: FRITZ!Box model and FRITZ!OS version you can test on (optional)
+      placeholder: "FRITZ!Box 6690 Cable, 8.25"
