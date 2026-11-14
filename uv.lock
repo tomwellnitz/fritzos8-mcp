@@ -556,6 +556,9 @@ qr = [
 ]
 
 [package.dev-dependencies]
+demo = [
+    { name = "rich" },
+]
 dev = [
     { name = "mypy" },
     { name = "pip-audit" },
@@ -590,6 +593,7 @@ requires-dist = [
 provides-extras = ["qr", "mqtt", "keyring"]
 
 [package.metadata.requires-dev]
+demo = [{ name = "rich", specifier = ">=15.0.0" }]
 dev = [
     { name = "mypy", specifier = ">=2.4.1" },
     { name = "pip-audit", specifier = ">=2.10.1" },

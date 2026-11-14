@@ -8,6 +8,8 @@
 
 **Lass deinen KI-Assistenten die FRITZ!Box verwalten – sicher.** Ein [MCP](https://modelcontextprotocol.io)-Server für AVM FRITZ!Boxen mit FRITZ!OS 8: langsames Internet diagnostizieren, Sicherheit prüfen, die Geräteliste aufräumen, Gast-WLAN, Telefonie und Smart Home steuern – standardmäßig nur lesend, und jede Änderung wird nachgeprüft.
 
+![Demo: Netz-Doktor, Sicherheits-Check und das Sicherheitsmodell Plan → Token → Ausführen](docs/demo.gif)
+
 ## Was du fragen kannst
 
 > **„Warum ist mein Internet heute Abend so langsam?"**

@@ -93,6 +93,9 @@ dev = [
     "types-defusedxml>=0.7.0.20260504",
     "types-pyyaml>=6.0.12.20261113",
 ]
+demo = [
+    "rich>=15.0.0",
+]
 docs = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.8.1",
