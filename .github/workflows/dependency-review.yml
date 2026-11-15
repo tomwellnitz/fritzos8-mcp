@@ -34,4 +34,8 @@ jobs:
           allow-licenses: >-
             MIT, MIT-0, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, PSF-2.0, Python-2.0, MPL-2.0, Unlicense,
             0BSD, EPL-2.0, BSD-3-Clause-Clear, Zlib, CC0-1.0
+          # PyInstaller (GPL-2.0 with the bootloader exception that permits bundling any program) is only used in the
+          # linux-only "fuzz" dependency group to pack the ClusterFuzzLite targets – never shipped with the package.
+          allow-dependencies-licenses: >-
+            pkg:pypi/pyinstaller, pkg:pypi/pyinstaller-hooks-contrib
           comment-summary-in-pr: on-failure

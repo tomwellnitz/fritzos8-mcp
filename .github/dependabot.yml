@@ -61,6 +61,19 @@ updates:
       include: "scope"
     labels: ["type/dependencies", "area/docker"]
 
+  # ClusterFuzzLite build image (OSS-Fuzz Python base + uv), pinned by digest
+  - package-ecosystem: "docker"
+    directory: "/.clusterfuzzlite"
+    schedule:
+      interval: "monthly"
+    groups:
+      clusterfuzzlite:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels: ["type/dependencies", "area/ci"]
+
   - package-ecosystem: "devcontainers"
     directory: "/"
     schedule:

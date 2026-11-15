@@ -1,0 +1,7 @@
+<phonebooks><phonebook owner="0" name="Telefonbuch">
+<contact><person><realName>Oma Erna</realName></person><telephony>
+<number type="home" prio="1">+49 30 1112223</number><number type="mobile">0170 9998887</number></telephony>
+<uniqueid>12</uniqueid></contact>
+<contact><person><realName>Praxis Dr. Beispiel</realName></person><telephony><number type="work">0305556667</number>
+</telephony><uniqueid>13</uniqueid></contact>
+</phonebook></phonebooks>
