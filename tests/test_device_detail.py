@@ -143,3 +143,15 @@ def test_by_name_and_not_found() -> None:
         c.device_detail("Unbekannt")
     with pytest.raises(InvalidParameterError):
         c.device_detail(" ")
+
+
+def test_non_decimal_digits_and_oversized_rates() -> None:
+    """'²'.isdigit() is True but int('²') raises – the query and mesh rates must not crash (found by fuzzing)."""
+    mesh = copy.deepcopy(MESH)
+    link = mesh["nodes"][1]["node_interfaces"][0]["node_links"][0]
+    link.update(cur_data_rate_rx="²", cur_data_rate_tx="9" * 400)
+    c = _client({}, mesh=mesh)
+    with pytest.raises(NotFoundError):
+        c.device_detail("²")
+    uplink = c.device_detail(REPEATER_MAC)["mesh"]["uplinks"][0]
+    assert uplink["rate_rx_mbit"] is None and uplink["rate_tx_mbit"] is None

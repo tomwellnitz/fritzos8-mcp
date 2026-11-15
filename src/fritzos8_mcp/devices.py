@@ -35,7 +35,7 @@ from .errors import (
 from .nasremote import ToolDecorator
 from .security import Tier
 from .toolargs import READ, BoxArg
-from .util import safe_mac, truthy
+from .util import decimal_int, safe_mac, truthy
 
 if TYPE_CHECKING:
     from .diagnose import DiagnoseClient
@@ -45,6 +45,11 @@ DECT = "X_AVM-DE_Dect1"
 HOMEPLUG = "X_AVM-DE_Homeplug1"
 ONTEL = "X_AVM-DE_OnTel1"
 MAX_ENTRIES = 64  # safety net against a wrong count
+
+
+def _kbit_to_mbit(value: Any) -> float | None:
+    kbit = decimal_int(value)
+    return None if kbit is None else round(kbit / 1000, 1)
 
 
 def _int(value: Any) -> int | None:
@@ -296,12 +301,8 @@ class DeviceUpdateClient:
                         "type": link.get("type") or iface.get("type"),
                         "peer": other.get("device_name"),
                         "peer_is_mesh_node": bool(other.get("is_meshed")),
-                        "rate_rx_mbit": round(int(link["cur_data_rate_rx"]) / 1000, 1)
-                        if str(link.get("cur_data_rate_rx") or "").isdigit()
-                        else None,
-                        "rate_tx_mbit": round(int(link["cur_data_rate_tx"]) / 1000, 1)
-                        if str(link.get("cur_data_rate_tx") or "").isdigit()
-                        else None,
+                        "rate_rx_mbit": _kbit_to_mbit(link.get("cur_data_rate_rx")),
+                        "rate_tx_mbit": _kbit_to_mbit(link.get("cur_data_rate_tx")),
                     }
                 )
         return {
@@ -323,10 +324,11 @@ class DeviceUpdateClient:
             raise InvalidParameterError("device angeben: MAC, DECT-ID (1–6 Mobilteil, ab 16 DECT-ULE) oder Name.")
         out: dict[str, Any] = {"query": query, "found_in": []}
         mac = safe_mac(query) or None
-        if query.isdigit():
-            r = self.tr064.try_call(DECT, "GetSpecificDectEntry", NewID=int(query))
+        query_id = decimal_int(query)
+        if query_id is not None:
+            r = self.tr064.try_call(DECT, "GetSpecificDectEntry", NewID=query_id)
             if r:
-                dect_id = int(query)
+                dect_id = query_id
                 out["dect"] = {
                     "id": dect_id,
                     "kind": "handset" if 1 <= dect_id <= 6 else "dect_ule",
@@ -349,7 +351,7 @@ class DeviceUpdateClient:
                     "last_update": _update_state(r.get("NewUpdateSuccessful")),
                 }
                 out["found_in"].append("powerline")
-        if not query.isdigit():
+        if query_id is None:
             hosts = self._section(self.mesh_devices)
             match = next(
                 (

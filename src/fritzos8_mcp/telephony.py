@@ -21,7 +21,7 @@ from defusedxml import ElementTree as ET
 
 from .errors import FritzError, InvalidParameterError, NotFoundError
 from .tr064 import Tr064Client
-from .util import truthy
+from .util import decimal_int, truthy
 
 ONTEL = "X_AVM-DE_OnTel1"
 TAM = "X_AVM-DE_TAM1"
@@ -264,7 +264,7 @@ class TelephonyClient:
 
     def phonebook_list(self, with_counts: bool = False) -> dict[str, Any]:
         raw = str(self.tr064.call(ONTEL, "GetPhonebookList").get("NewPhonebookList") or "")
-        ids = [int(x) for x in raw.replace(" ", "").split(",") if x.isdigit()]
+        ids = [n for n in map(decimal_int, raw.replace(" ", "").split(",")) if n is not None]
         books = []
         for pid in ids:
             info = self.tr064.call(ONTEL, "GetPhonebook", NewPhonebookID=pid)

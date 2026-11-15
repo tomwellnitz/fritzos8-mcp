@@ -15,7 +15,7 @@ from defusedxml import ElementTree as ET
 
 from .errors import FritzConnectionError, FritzError, InvalidParameterError, NotFoundError
 from .tr064 import Tr064Client
-from .util import truthy
+from .util import box_int, truthy
 from .wlan import WlanClient
 
 MAX_LOG_LINES = 500
@@ -28,10 +28,8 @@ def _strip_new(d: dict[str, Any]) -> dict[str, Any]:
 
 
 def _tenth_db(value: Any) -> float | None:
-    try:
-        return round(int(value) / 10, 1)
-    except (TypeError, ValueError):
-        return None
+    number = box_int(value)
+    return None if number is None else round(number / 10, 1)
 
 
 def parse_log_text(text: str) -> list[dict[str, Any]]:

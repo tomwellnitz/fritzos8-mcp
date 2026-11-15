@@ -40,7 +40,7 @@ from .paths import ensure_private_dir, safe_component, state_dir, write_private
 from .quality import is_raspberry_pi, mesh_clients
 from .security import Tier
 from .toolargs import DESTRUCTIVE, READ, BoxArg, TokenArg
-from .util import safe_mac
+from .util import decimal_int, safe_mac
 
 if TYPE_CHECKING:
     from .service import FritzService
@@ -186,7 +186,7 @@ class NetworkOptimizer:
             if not r.get("enabled") or r.get("auto_channel") or not isinstance(ch, int) or ch <= 0:
                 continue
             band_s = str(band)
-            possible = [int(c) for c in r.get("possible_channels") or [] if str(c).isdigit()]
+            possible = [c for c in map(decimal_int, r.get("possible_channels") or []) if c is not None]
             warnings = ["WLAN-Geräte in diesem Band verbinden sich beim Kanalwechsel kurz neu."]
             if band_s in ("2.4", "2") and ch not in (*NON_OVERLAPPING_24, 13):
                 nearest = _nearest_channel(ch, possible)
