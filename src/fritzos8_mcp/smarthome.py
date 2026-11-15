@@ -35,6 +35,7 @@ from .errors import (
 )
 from .guard import BoxGuard, guarded
 from .health import record as record_health
+from .util import box_int
 
 log = logging.getLogger(__name__)
 
@@ -106,9 +107,8 @@ def encode_target(target_c: float | None, mode: str | None) -> int:
 
 
 def decode_tsoll(raw: Any) -> dict[str, Any]:
-    try:
-        value = int(str(raw).strip())
-    except (TypeError, ValueError):
+    value = box_int(raw)
+    if value is None:
         return {"raw": raw, "mode": "unknown", "celsius": None}
     if value == HKR_OFF:
         return {"raw": value, "mode": "off", "celsius": None}
@@ -117,11 +117,8 @@ def decode_tsoll(raw: Any) -> dict[str, Any]:
     return {"raw": value, "mode": "temp", "celsius": value / 2}
 
 
-def _int(text: str | None) -> int | None:
-    try:
-        return int(str(text).strip())
-    except (TypeError, ValueError):
-        return None
+def _int(value: Any) -> int | None:
+    return box_int(value)
 
 
 def _functions(mask: int) -> list[str]:

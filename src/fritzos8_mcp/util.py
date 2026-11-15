@@ -37,3 +37,19 @@ def validate_hostname(name: str) -> str:
 
 def truthy(value: Any) -> bool:
     return str(value if value is not None else "").strip().lower() in {"1", "true", "on", "yes"}
+
+
+# Largest magnitude a number in a box answer can have: TR-064 knows ui8/i8 at most (AVM data types), AHA and the mesh
+# list use 32-bit values. Anything beyond is a broken or forged answer – and would overflow float arithmetic
+# ("int too large to convert to float").
+MAX_BOX_INT = 2**64
+
+
+def box_int(value: Any) -> int | None:
+    """Integer from a box answer (``str``/``int``, surrounding whitespace allowed); ``None`` if missing, not an
+    integer or beyond 64 bit."""
+    try:
+        number = int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+    return number if -MAX_BOX_INT < number < MAX_BOX_INT else None

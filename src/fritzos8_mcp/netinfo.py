@@ -29,7 +29,7 @@ from defusedxml import ElementTree as ET
 from .errors import FritzConnectionError, FritzError, NotFoundError
 from .myfritz import DDNS_INFO_ACTIONS
 from .tr064 import IGD_WAN_COMMON, Tr064Client, parse_host_list_xml
-from .util import safe_mac, truthy
+from .util import box_int, safe_mac, truthy
 
 INFRA_ROLES = {"master", "slave"}
 WEAK_SIGNAL_DBM = -75  # weak_signal_clients (measured or estimated dBm)
@@ -44,10 +44,7 @@ ADDON_RATES = {"sync": "Sync", "brutto": "Brutto", "tariff": "TariffDataRate", "
 
 
 def _int(value: Any) -> int | None:
-    try:
-        return int(str(value).strip())
-    except (TypeError, ValueError):
-        return None
+    return box_int(value)
 
 
 def rcpi_to_dbm(rcpi: Any) -> float | None:
