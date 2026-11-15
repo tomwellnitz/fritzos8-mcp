@@ -4,7 +4,8 @@ name: Release
 # existing tag. Builds once, attests the build provenance, attaches sdist/wheel to the release and publishes:
 #   - PyPI via Trusted Publishing (OIDC, environment "pypi") – only if the repository variable PUBLISH_PYPI=true,
 #   - the multi-arch container image (linux/amd64, linux/arm64) to ghcr.io/<owner>/fritzos8-mcp with SBOM + provenance,
-#   - the official MCP Registry entry (server.json, GitHub OIDC) after PyPI – only if PUBLISH_MCP_REGISTRY=true.
+#   - the official MCP Registry entry (server.json, GitHub OIDC) after PyPI – only if PUBLISH_MCP_REGISTRY=true,
+#   - the Claude Desktop bundle fritzos8-mcp-<version>.mcpb (scripts/build_mcpb.sh), attested and attached.
 on:
   release:
     types: [published]
@@ -84,6 +85,40 @@ jobs:
         with:
           packages-dir: dist/
           attestations: true
+
+  mcpb:
+    name: mcpb
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # upload the bundle to the release
+      id-token: write # build provenance attestation
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.13.1"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Bundle manifest matches the release
+        run: |
+          test "$(jq -r .version mcpb/manifest.json)" = "${TAG#v}" \
+            || { echo "::error::mcpb/manifest.json version does not match $TAG"; exit 1; }
+      - name: Build the Claude Desktop bundle (mcpb CLI pinned in mcpb/package-lock.json)
+        run: scripts/build_mcpb.sh
+      - name: Smoke test (start as the manifest says, initialize + tools/list, dummy config)
+        run: python3 scripts/mcpb_smoke.py "dist/fritzos8-mcp-${TAG#v}.mcpb"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*.mcpb
+      - name: Attach the bundle to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "dist/fritzos8-mcp-${TAG#v}.mcpb" --clobber --repo "$GITHUB_REPOSITORY"
 
   docker:
     name: docker

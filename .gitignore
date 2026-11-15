@@ -26,3 +26,6 @@ docs/vendor/
 site/
 .private-patterns
 .audit-requirements.txt
+
+# mcpb bundle tooling (scripts/build_mcpb.sh)
+node_modules/

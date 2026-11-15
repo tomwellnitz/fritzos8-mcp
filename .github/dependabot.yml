@@ -19,6 +19,16 @@ updates:
       include: "scope"
     labels: ["type/dependencies", "area/build"]
 
+  # pinned mcpb CLI for the Claude Desktop bundle (scripts/build_mcpb.sh)
+  - package-ecosystem: "npm"
+    directory: "/mcpb"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    labels: ["type/dependencies", "area/build"]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

@@ -1,0 +1,7 @@
+# Defense in depth – scripts/build_mcpb.sh stages an allowlist of tracked files only.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

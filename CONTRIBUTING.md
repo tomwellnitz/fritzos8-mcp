@@ -126,7 +126,8 @@ Releases are fully automated with [release-please](https://github.com/googleapis
 3. The release triggers `.github/workflows/release.yml`: tests, build, build-provenance attestation, sdist/wheel
    attached to the release, PyPI upload via Trusted Publishing (only when the repository variable
    `PUBLISH_PYPI=true`) and the multi-arch image `ghcr.io/tomwellnitz/fritzos8-mcp` (`X.Y.Z`, `X.Y`, `latest`, with SBOM
-   and provenance).
+   and provenance), and the Claude Desktop bundle `fritzos8-mcp-X.Y.Z.mcpb` attached to the release
+   (`make mcpb` builds and smoke-tests it locally; the version in `mcpb/manifest.json` is bumped by release-please).
 
 Never bump versions, edit version sections of the changelog or push tags by hand. To force a specific version, add a
 commit with the footer `Release-As: X.Y.Z`. If a release was created without `RELEASE_PLEASE_TOKEN`, start

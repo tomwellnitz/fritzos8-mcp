@@ -1,0 +1,81 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
+  "manifest_version": "0.4",
+  "name": "fritzos8-mcp",
+  "display_name": "FRITZ!Box (FRITZ!OS 8)",
+  "version": "0.1.1",
+  "description": "Local MCP server for an AVM FRITZ!Box with FRITZ!OS 8: diagnostics, devices, Wi-Fi, phone and smart home. Read-only by default.",
+  "long_description": "Talks to the box in your home network over TR-064, the AHA smart home interface and the web UI's REST API. Starts read-only; write tools need **Allow changes**, and critical actions (reboot, port forwarding, firmware update) additionally need **Allow critical actions** and go through a plan/confirm step. Every write is read back, and passwords, Wi-Fi keys and PINs are never returned.\n\nNot affiliated with or endorsed by AVM / FRITZ! GmbH.",
+  "author": {
+    "name": "Tom Wellnitz",
+    "url": "https://github.com/tomwellnitz"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tomwellnitz/fritzos8-mcp"
+  },
+  "homepage": "https://github.com/tomwellnitz/fritzos8-mcp",
+  "documentation": "https://github.com/tomwellnitz/fritzos8-mcp/blob/main/docs/clients.md",
+  "support": "https://github.com/tomwellnitz/fritzos8-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "uv",
+    "entry_point": "src/fritzos8_mcp/__init__.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "--directory", "${__dirname}", "--frozen", "--no-dev", "--quiet", "fritzos8-mcp"],
+      "env": {
+        "FRITZ_HOST": "${user_config.fritz_host}",
+        "FRITZ_USER": "${user_config.fritz_user}",
+        "FRITZ_PASSWORD": "${user_config.fritz_password}",
+        "FRITZ_ALLOW_WRITE": "${user_config.allow_write}",
+        "FRITZ_ALLOW_CRITICAL": "${user_config.allow_critical}"
+      }
+    }
+  },
+  "tools_generated": true,
+  "keywords": ["fritzbox", "fritzos", "router", "tr-064", "home-network", "smart-home"],
+  "license": "MIT",
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "python": ">=3.12"
+    }
+  },
+  "user_config": {
+    "fritz_host": {
+      "type": "string",
+      "title": "FRITZ!Box address",
+      "description": "Host name or IP address of the box. fritz.box works in most home networks.",
+      "default": "fritz.box",
+      "required": false
+    },
+    "fritz_user": {
+      "type": "string",
+      "title": "FRITZ!Box user",
+      "description": "A dedicated user created under System > FRITZ!Box Users. TR-064 access must be enabled under Home Network > Network > Network Settings.",
+      "required": true
+    },
+    "fritz_password": {
+      "type": "string",
+      "title": "Password",
+      "description": "Password of that user. Stored encrypted by the app using the operating system's secure storage.",
+      "sensitive": true,
+      "required": true
+    },
+    "allow_write": {
+      "type": "boolean",
+      "title": "Allow changes",
+      "description": "Enables write tools such as renaming devices or switching the guest Wi-Fi. Every change is read back.",
+      "default": false,
+      "required": false
+    },
+    "allow_critical": {
+      "type": "boolean",
+      "title": "Allow critical actions",
+      "description": "Reboot, port forwarding, firmware update and similar. Only effective together with Allow changes; each action needs a plan and an explicit confirmation.",
+      "default": false,
+      "required": false
+    }
+  }
+}

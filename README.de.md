@@ -47,7 +47,7 @@ Rund 160 Tools – siehe die generierte **[Tool-Referenz](docs/TOOLS.md)**.
 uvx --from 'fritzos8-mcp[keyring]' keyring set fritzos8-mcp <benutzer>
 ```
 
-**3. Server im Client eintragen** – hier Claude Code. Andere Clients sowie Windows/Linux: [docs/clients.md](docs/clients.md) (Englisch).
+**3. Server im Client eintragen** – hier Claude Code. Andere Clients sowie Windows/Linux: [docs/clients.md](docs/clients.md) (Englisch). **Claude Desktop:** stattdessen das Ein-Klick-Bundle `fritzos8-mcp-<version>.mcpb` aus dem [neuesten Release](https://github.com/tomwellnitz/fritzos8-mcp/releases/latest) installieren – es fragt Adresse, Benutzer und Passwort ab und braucht weder Schritt 2 noch ein Terminal.
 
 ```bash
 claude mcp add fritzos8 -s user -e FRITZ_HOST=fritz.box -e FRITZ_USER=<benutzer> -- \
