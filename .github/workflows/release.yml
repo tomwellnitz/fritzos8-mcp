@@ -6,6 +6,15 @@ name: Release
 #   - the multi-arch container image (linux/amd64, linux/arm64) to ghcr.io/<owner>/fritzos8-mcp with SBOM + provenance,
 #   - the official MCP Registry entry (server.json, GitHub OIDC) after PyPI – only if PUBLISH_MCP_REGISTRY=true,
 #   - the Claude Desktop bundle fritzos8-mcp-<version>.mcpb (scripts/build_mcpb.sh), attested and attached.
+#
+# SLSA provenance as release assets: the Sigstore bundle written by actions/attest-build-provenance (JSON Lines, one
+# signed in-toto statement with a https://slsa.dev/provenance/v1 predicate per line) is attached next to the files it
+# covers as *.intoto.jsonl – the same attestation that `gh attestation verify` finds online, usable offline with
+# `gh attestation verify <file> --bundle <file>.intoto.jsonl --repo <owner>/<repo>`. OpenSSF Scorecard
+# ("Signed-Releases") counts *.intoto.jsonl assets as provenance (score 10). We deliberately do not use the
+# slsa-github-generator reusable workflows: their README requires a tag reference (@vX.Y.Z, never a commit SHA) so
+# that slsa-verifier can check the trusted builder's ref – that conflicts with our rule to pin every action to a
+# commit SHA, and Scorecard "Pinned-Dependencies" reports such a tag reference as unpinned.
 on:
   release:
     types: [published]
@@ -52,13 +61,19 @@ jobs:
         run: uv build
       - name: Check metadata
         run: uv run --frozen --only-group dev twine check --strict dist/*
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      - id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*
-      - name: Attach sdist + wheel to the GitHub release
+      - name: Attach sdist + wheel and their SLSA provenance to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" dist/* --clobber --repo "$GITHUB_REPOSITORY"
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        # The provenance file stays outside dist/, which is uploaded to PyPI unchanged.
+        run: |
+          provenance="$RUNNER_TEMP/fritzos8-mcp-${TAG#v}.intoto.jsonl"
+          cp "$BUNDLE" "$provenance"
+          gh release upload "$TAG" dist/* "$provenance" --clobber --repo "$GITHUB_REPOSITORY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist
@@ -112,13 +127,18 @@ jobs:
         run: scripts/build_mcpb.sh
       - name: Smoke test (start as the manifest says, initialize + tools/list, dummy config)
         run: python3 scripts/mcpb_smoke.py "dist/fritzos8-mcp-${TAG#v}.mcpb"
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      - id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*.mcpb
-      - name: Attach the bundle to the GitHub release
+      - name: Attach the bundle and its SLSA provenance to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" "dist/fritzos8-mcp-${TAG#v}.mcpb" --clobber --repo "$GITHUB_REPOSITORY"
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          provenance="$RUNNER_TEMP/fritzos8-mcp-${TAG#v}.mcpb.intoto.jsonl"
+          cp "$BUNDLE" "$provenance"
+          gh release upload "$TAG" "dist/fritzos8-mcp-${TAG#v}.mcpb" "$provenance" --clobber --repo "$GITHUB_REPOSITORY"
 
   docker:
     name: docker

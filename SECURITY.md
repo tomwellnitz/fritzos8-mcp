@@ -62,5 +62,36 @@ already has the box password or the bearer token.
 - **HTTP transport** only with a bearer token (≥ 32 characters, constant-time comparison), localhost bind by default.
 - **Supply chain:** dependencies locked in `uv.lock`, GitHub Actions pinned to commit SHAs, Dependabot, CodeQL,
   pip-audit, gitleaks and OpenSSF Scorecard in CI; releases are built in GitHub Actions with build-provenance
-  attestations, PyPI Trusted Publishing and container images with SBOM and provenance. Verify an artifact with
-  `gh attestation verify <file-or-oci-ref> --repo tomwellnitz/fritzos8-mcp`.
+  attestations, PyPI Trusted Publishing and container images with SBOM and provenance (see below).
+
+## Verifying release artifacts
+
+Every release artifact is built in GitHub Actions (`.github/workflows/release.yml`) and comes with a signed
+[SLSA](https://slsa.dev) build provenance (Sigstore, keyless, issued for this repository's release workflow). The
+provenance is stored in GitHub's attestation store and, for the files on the GitHub release, also attached as assets:
+
+| Release asset                                   | Provenance asset                        |
+|-------------------------------------------------|-----------------------------------------|
+| `fritzos8_mcp-X.Y.Z.tar.gz`, `fritzos8_mcp-X.Y.Z-py3-none-any.whl` | `fritzos8-mcp-X.Y.Z.intoto.jsonl` |
+| `fritzos8-mcp-X.Y.Z.mcpb` (Claude Desktop bundle) | `fritzos8-mcp-X.Y.Z.mcpb.intoto.jsonl`  |
+
+Each `*.intoto.jsonl` file is a Sigstore bundle (JSON Lines) containing an in-toto statement with a
+`https://slsa.dev/provenance/v1` predicate. Verify with the [GitHub CLI](https://cli.github.com/) (≥ 2.49):
+
+```bash
+# online (looks the attestation up on GitHub)
+gh attestation verify fritzos8-mcp-X.Y.Z.mcpb --repo tomwellnitz/fritzos8-mcp
+
+# offline against the attached provenance file, pinned to the release workflow
+gh attestation verify fritzos8_mcp-X.Y.Z-py3-none-any.whl \
+  --bundle fritzos8-mcp-X.Y.Z.intoto.jsonl \
+  --repo tomwellnitz/fritzos8-mcp \
+  --signer-workflow tomwellnitz/fritzos8-mcp/.github/workflows/release.yml
+
+# container image (provenance and SBOM are attached to the image in GHCR)
+gh attestation verify oci://ghcr.io/tomwellnitz/fritzos8-mcp:X.Y.Z --repo tomwellnitz/fritzos8-mcp
+```
+
+A successful verification proves that the file was built from this repository by the release workflow and was not
+modified afterwards. Packages on PyPI additionally carry PEP 740 attestations (shown on pypi.org). Releases up to and
+including 0.2.0 have no `*.intoto.jsonl` asset; use the online command for them.

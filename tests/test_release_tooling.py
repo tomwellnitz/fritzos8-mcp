@@ -54,3 +54,19 @@ def test_changelog_is_release_please_compatible() -> None:
     assert text.startswith("# Changelog\n")
     assert "[Unreleased]" not in text
     assert re.search(r"\n###? v?[0-9\[]", text), "release-please needs an existing version header as anchor"
+
+
+def test_release_attaches_slsa_provenance() -> None:
+    """Every attested release file gets its provenance as *.intoto.jsonl asset (OpenSSF Scorecard Signed-Releases)."""
+    import yaml
+
+    workflow = yaml.safe_load((ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8"))
+    expected = {"build": "fritzos8-mcp-${TAG#v}.intoto.jsonl", "mcpb": "fritzos8-mcp-${TAG#v}.mcpb.intoto.jsonl"}
+    for job, provenance in expected.items():
+        steps = workflow["jobs"][job]["steps"]
+        attest = [s for s in steps if str(s.get("uses", "")).startswith("actions/attest-build-provenance@")]
+        assert attest and attest[0].get("id") == "attest", job
+        upload = [s for s in steps if "gh release upload" in s.get("run", "")]
+        assert upload, job
+        assert upload[0]["env"]["BUNDLE"] == "${{ steps.attest.outputs.bundle-path }}", job
+        assert provenance in upload[0]["run"], job
