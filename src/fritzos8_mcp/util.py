@@ -60,3 +60,9 @@ def decimal_int(value: Any) -> int | None:
     ``str.isdecimal`` – ``isdigit`` also accepts characters such as "²" that ``int()`` rejects."""
     text = str(value if value is not None else "").strip()
     return box_int(text) if text.isdecimal() else None
+
+
+def json_objects(value: Any) -> list[dict[str, Any]]:
+    """The objects of a JSON list from the box (e.g. mesh ``nodes``/``node_interfaces``/``node_links``); a missing,
+    ``null`` or differently typed value counts as empty, non-object entries are skipped."""
+    return [v for v in value if isinstance(v, dict)] if isinstance(value, list) else []
