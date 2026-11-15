@@ -1,6 +1,6 @@
 [project]
 name = "fritzos8-mcp"
-version = "0.1.1"
+version = "0.2.0"
 description = "Platform MCP server for AVM FRITZ!Box with FRITZ!OS 8 (TR-064 + /api/v0 REST) with tiered write safety"
 readme = "README.md"
 authors = [{ name = "Tom Wellnitz" }]
