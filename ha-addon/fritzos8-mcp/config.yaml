@@ -1,5 +1,5 @@
 name: FRITZ!OS 8 MCP
-version: "0.2.0" # x-release-please-version
+version: "0.2.1" # x-release-please-version
 slug: fritzos8_mcp
 description: Messreihe und Alarme der FRITZ!Box als HA-Entitäten (MQTT), optional MCP-Server über HTTP mit Token
 url: https://github.com/tomwellnitz/fritzos8-mcp
