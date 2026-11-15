@@ -4,6 +4,35 @@ How to install `fritzos8-mcp` and add it to an MCP client on macOS, Windows and 
 
 Placeholders: `<user>` is the FRITZ!Box user, `<you>` your operating system account. `~` is your home directory (`%USERPROFILE%` on Windows). `FRITZ_HOST` is `fritz.box` throughout; use the box's IP if that name does not resolve.
 
+## Claude Desktop – one-click bundle (.mcpb)
+
+Every release ships an [MCP Bundle](https://github.com/modelcontextprotocol/mcpb) for Claude Desktop (macOS, Windows, Linux beta). No terminal, no uv installation, no config file.
+
+1. Prepare the box as described under [Prerequisites](#prerequisites) (step 1 only).
+2. Download `fritzos8-mcp-<version>.mcpb` from the [latest release](https://github.com/tomwellnitz/fritzos8-mcp/releases/latest).
+3. Open the file (double-click). Claude Desktop shows an install dialog. Alternatively: *Settings*, *Manage* next to *Extensions*, then *Advanced settings › Install Extension…* and pick the file.
+4. Fill in the fields and enable the extension:
+
+| Field | Default | Becomes |
+|---|---|---|
+| FRITZ!Box address | `fritz.box` | `FRITZ_HOST` |
+| FRITZ!Box user (required) | – | `FRITZ_USER` |
+| Password (required) | – | `FRITZ_PASSWORD` |
+| Allow changes | off | `FRITZ_ALLOW_WRITE` |
+| Allow critical actions | off | `FRITZ_ALLOW_CRITICAL` (only together with *Allow changes*) |
+
+5. Ask Claude to run `setup_check`.
+
+**Where the password goes.** The field is marked `sensitive` in the bundle manifest. According to the [Claude Help Center](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop), Claude Desktop encrypts such values with the operating system's secure storage – Keychain on macOS, Credential Manager on Windows, the distribution's keyring on Linux – and hands the value to the server as `FRITZ_PASSWORD` in its environment when it starts.
+
+**How it runs.** The bundle contains this project's source and its `uv.lock` (server type `uv`, manifest version 0.4). Claude Desktop starts it with `uv run --frozen --no-dev fritzos8-mcp`, using an installed uv or one it downloads itself; uv fetches Python ≥ 3.12 and exactly the locked dependencies. The first start therefore needs internet access and takes a little longer; nothing is installed system-wide.
+
+**Updates.** A bundle is pinned to its release. To update, install the `.mcpb` of the newer release.
+
+**Known issue.** On Windows on ARM, older Claude Desktop versions failed to download uv with a checksum error ([mcpb#203](https://github.com/modelcontextprotocol/mcpb/issues/203)). Installing uv system-wide (`winget install --id=astral-sh.uv -e`) avoids the download.
+
+Logs are in the same place as for the manual setup (see [Claude Desktop](#claude-desktop) below). Everything else on this page is for the manual setup and for other clients.
+
 ## Prerequisites
 
 **1. The box.** Enable *Home Network › Network › Network Settings › Allow access for applications* and create a dedicated user under *System › FRITZ!Box Users*. Required rights: [configuration](https://github.com/tomwellnitz/fritzos8-mcp/blob/main/docs/configuration.md#permissions).
@@ -147,7 +176,7 @@ Everything before `--` belongs to Claude Code, everything after it is the server
 
 ### Claude Desktop
 
-Source: [modelcontextprotocol.io – Connect to local MCP servers](https://modelcontextprotocol.io/docs/develop/connect-local-servers), [Claude Help Center](https://support.claude.com/en/articles/10065433-install-claude-desktop) (Linux is a beta for Ubuntu 22.04+ / Debian 12+). Open the file via *Settings › Developer › Edit Config*, then quit and restart the app completely.
+Source: [modelcontextprotocol.io – Connect to local MCP servers](https://modelcontextprotocol.io/docs/develop/connect-local-servers), [Claude Help Center](https://support.claude.com/en/articles/10065433-install-claude-desktop) (Linux is a beta for Ubuntu 22.04+ / Debian 12+). The one-click bundle at the top of this page is the easier way; this is the manual setup. Open the file via *Settings › Developer › Edit Config*, then quit and restart the app completely.
 
 | OS | Config file |
 |---|---|

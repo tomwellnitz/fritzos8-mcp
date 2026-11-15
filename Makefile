@@ -8,7 +8,7 @@ RUN      := $(UV) run --frozen
 IMAGE    ?= fritzos8-mcp:dev
 SNAPSHOT ?= ../fritzos8-mcp-public
 
-.PHONY: help setup sync lint format typecheck test test-live docs-check docs docs-serve demo build docker audit \
+.PHONY: help setup sync lint format typecheck test test-live docs-check docs docs-serve demo build docker mcpb audit \
         pre-commit check snapshot clean
 
 help: ## Show this help
@@ -57,6 +57,10 @@ build: ## Build sdist + wheel into dist/ and check the metadata
 
 docker: ## Build the container image locally ($(IMAGE))
 	docker build -t $(IMAGE) .
+
+mcpb: ## Build + smoke-test the Claude Desktop bundle dist/fritzos8-mcp-<version>.mcpb (needs npm)
+	scripts/build_mcpb.sh
+	python3 scripts/mcpb_smoke.py dist/fritzos8-mcp-$$($(UV) version --short).mcpb
 
 audit: ## Scan the locked dependencies for known vulnerabilities (pip-audit)
 	$(UV) export --frozen --all-extras --no-dev --no-emit-project --format requirements-txt -o .audit-requirements.txt -q

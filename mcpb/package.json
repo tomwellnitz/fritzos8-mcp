@@ -1,0 +1,9 @@
+{
+  "name": "fritzos8-mcp-bundle-tooling",
+  "private": true,
+  "description": "Pinned mcpb CLI for building the Claude Desktop bundle (scripts/build_mcpb.sh)",
+  "license": "MIT",
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "2.1.2"
+  }
+}

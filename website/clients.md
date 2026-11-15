@@ -4,6 +4,22 @@ Kurzfassung der englischen Anleitung [docs/clients.md](https://github.com/tomwel
 
 Platzhalter: `<user>` = FRITZ!Box-Benutzer, `<you>` = eigenes Betriebssystem-Konto, `~` = Home-Verzeichnis (Windows `%USERPROFILE%`).
 
+## Claude Desktop – Ein-Klick-Bundle (.mcpb)
+
+Jedes Release enthält ein [MCP Bundle](https://github.com/modelcontextprotocol/mcpb) für Claude Desktop (macOS, Windows, Linux-Beta) – ohne Terminal, ohne uv-Installation, ohne Konfigurationsdatei.
+
+1. Box vorbereiten: TR-064 erlauben, eigenen Benutzer anlegen (siehe [Schnellstart](quickstart.md)).
+2. `fritzos8-mcp-<version>.mcpb` aus dem [neuesten Release](https://github.com/tomwellnitz/fritzos8-mcp/releases/latest) laden.
+3. Datei öffnen (Doppelklick) – Claude Desktop zeigt den Installationsdialog. Alternativ in den Erweiterungs-Einstellungen von Claude Desktop über *Advanced settings › Install Extension…* (englische Oberfläche).
+4. Felder ausfüllen: Adresse (Standard `fritz.box`), Benutzer, Passwort, optional *Allow changes* (`FRITZ_ALLOW_WRITE`) und *Allow critical actions* (`FRITZ_ALLOW_CRITICAL`, nur zusammen mit Schreiben).
+5. Claude `setup_check` ausführen lassen.
+
+Das Passwortfeld ist im Manifest als `sensitive` markiert. Laut [Claude-Hilfe](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop) verschlüsselt Claude Desktop solche Werte mit dem Schlüsselspeicher des Betriebssystems (macOS: Schlüsselbund, Windows: Anmeldeinformationsverwaltung, Linux: Schlüsselbund der Distribution) und übergibt sie beim Start als Umgebungsvariable `FRITZ_PASSWORD`.
+
+Das Bundle enthält den Quellcode samt `uv.lock` (Server-Typ `uv`); Claude Desktop startet es mit `uv run --frozen --no-dev` und lädt dabei uv, Python ≥ 3.12 und genau die gesperrten Abhängigkeiten selbst. Der erste Start braucht deshalb Internet und etwas länger. Aktualisieren: das `.mcpb` des neueren Releases installieren. Windows auf ARM: Scheitert der uv-Download mit einem Prüfsummenfehler ([mcpb#203](https://github.com/modelcontextprotocol/mcpb/issues/203)), uv systemweit installieren (`winget install --id=astral-sh.uv -e`).
+
+Alles Weitere auf dieser Seite gilt für die manuelle Einrichtung und andere Clients.
+
 ## Voraussetzungen
 
 **uv installieren** (bringt `uvx` mit und lädt Python bei Bedarf selbst):

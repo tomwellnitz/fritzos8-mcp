@@ -20,7 +20,7 @@ claude mcp add fritzos8 -s user \
   -e FRITZ_HOST=fritz.box -e FRITZ_USER=<benutzer> -- uvx --from 'fritzos8-mcp[keyring]' fritzos8-mcp
 ```
 
-Andere Clients sowie Windows/Linux: [MCP-Clients](clients.md).
+Andere Clients sowie Windows/Linux: [MCP-Clients](clients.md). **Claude Desktop:** einfacher per Ein-Klick-Bundle `fritzos8-mcp-<version>.mcpb` aus dem [neuesten Release](https://github.com/tomwellnitz/fritzos8-mcp/releases/latest) – Doppelklick, Felder ausfüllen ([Anleitung](clients.md#claude-desktop-ein-klick-bundle-mcpb)).
 
 Danach `setup_check` aufrufen: prüft TR-064, Rechte, Zusatzbestätigung und Erreichbarkeit der Schnittstellen und sagt, welche Tools wegen fehlender Rechte nicht funktionieren.
 
