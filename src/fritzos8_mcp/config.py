@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import math
 import os
 import re
 from collections.abc import Mapping
@@ -21,6 +22,7 @@ def _flag(value: str | None) -> bool:
 
 
 DEFAULT_BOX = "default"
+MAX_TIMEOUT = 300.0  # seconds per request (FRITZ_TIMEOUT)
 _BOX_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
 # Per-box overridable variables (FRITZ_<NAME>_<VAR>); tiers stay global.
 PER_BOX_VARS = (
@@ -154,6 +156,9 @@ def load(environ: Mapping[str, str] | None = None) -> Config:
         timeout = float(e.get("FRITZ_TIMEOUT") or 15.0)
     except ValueError:
         raise ConfigError("FRITZ_TIMEOUT muss eine Zahl (Sekunden) sein.") from None
+    # float() also accepts "nan", "inf" and negative values – none of them is a usable request timeout.
+    if not (math.isfinite(timeout) and 0 < timeout <= MAX_TIMEOUT):
+        raise ConfigError(f"FRITZ_TIMEOUT muss größer als 0 und höchstens {MAX_TIMEOUT:g} Sekunden sein.")
 
     try:
         snapshot_keep = int(e.get("FRITZ_SNAPSHOT_KEEP") or 30)

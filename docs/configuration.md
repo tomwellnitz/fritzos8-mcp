@@ -39,7 +39,7 @@ Secrets are read from the environment, a file or the OS keychain – never from 
 | `FRITZ_ALLOW_SECRETS` | off | `1` enables the `secrets` tier (only `guest_wifi_qr`: the key exists only inside the local QR image) |
 | `FRITZ_BOXES` | – | multi-box mode, see below |
 | `FRITZ_USE_TLS` | off | `1` = HTTPS / TR-064 over TLS (self-signed box certificate, not verified) |
-| `FRITZ_TIMEOUT` | `15` | request timeout in seconds |
+| `FRITZ_TIMEOUT` | `15` | request timeout in seconds (greater than 0, at most 300) |
 | `FRITZ_REDACT_SERIALS` | off | `1` also masks serial numbers, IMEI/ICCID, UDN/UUID |
 | `FRITZ_STATE_DIR` | `~/.local/state/fritzos8-mcp` | snapshots, measurement series, alarms, reports (0700/0600) |
 | `FRITZ_SNAPSHOT_KEEP` | `30` | snapshots kept per box |
