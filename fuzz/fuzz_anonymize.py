@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-from fuzzhelp import NOTHING, data_provider, instrumented, load_json, pick, run
+from fuzzhelp import NOTHING, header_and_text, instrumented, load_json, run
 
 with instrumented():
     from fritzos8_mcp.anonymize import anonymize, build_fixture, find_leftovers
@@ -21,10 +21,9 @@ SECRET_FIELDS = ("NewKeyPassphrase", "NewPreSharedKey", "NewX_AVM-DE_WPSClientPI
 
 
 def TestOneInput(data: bytes) -> None:
-    fdp = data_provider(data)
-    kind = pick(fdp, KINDS)
-    plant = fdp.ConsumeIntInRange(0, len(SECRET_FIELDS))  # == len: nichts pflanzen
-    text = fdp.ConsumeUnicodeNoSurrogates(fdp.remaining_bytes())
+    head, text = header_and_text(data, 2)
+    kind = KINDS[head[0] % len(KINDS)]
+    plant = head[1] % (len(SECRET_FIELDS) + 1)  # == len: nichts pflanzen
     data_in: object = text
     if kind in ("auto", "tr064", "rest") and (parsed := load_json(text)) is not NOTHING:
         data_in = parsed

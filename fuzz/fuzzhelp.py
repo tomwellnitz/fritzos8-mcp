@@ -76,6 +76,13 @@ def load_json(text: str, max_depth: int = 64) -> Any:
 NOTHING = _NOTHING
 
 
+def header_and_text(data: bytes, header: int) -> tuple[bytes, str]:
+    """Die ersten ``header`` Bytes (Auswahl-Bytes) und der Rest als UTF-8-Text – für Targets mit Seed-Korpus, deren
+    Seeds lesbar bleiben sollen (``FuzzedDataProvider.ConsumeUnicode`` wählt die Kodierung selbst und zerlegt sie)."""
+    head = data[:header].ljust(header, b"\0")
+    return head, data[header:].decode("utf-8", errors="replace")
+
+
 def pick(fdp: Any, values: Sequence[Any]) -> Any:
     """Ein Element aus ``values`` (statt ``PickValueInList``, das in atheris nur echte Listen annimmt)."""
     return values[fdp.ConsumeIntInRange(0, len(values) - 1)]

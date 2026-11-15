@@ -10,16 +10,16 @@ from __future__ import annotations
 
 import json
 
-from fuzzhelp import data_provider, instrumented, load_json, run
+from fuzzhelp import header_and_text, instrumented, load_json, run
 
 with instrumented():
     from fritzos8_mcp.netinfo import parse_mesh
 
 
 def TestOneInput(data: bytes) -> None:
-    fdp = data_provider(data)
-    with_stations = fdp.ConsumeBool()
-    doc = load_json(fdp.ConsumeUnicodeNoSurrogates(fdp.remaining_bytes()))
+    head, text = header_and_text(data, 1)
+    with_stations = bool(head[0] & 1)
+    doc = load_json(text)
     if not isinstance(doc, dict):
         return  # weist NetInfoClient._mesh_document vorher ab
     stations = {"AA:BB:CC:00:00:01": {"signal_percent": 50, "signal_dbm_estimated": -70.0}} if with_stations else None

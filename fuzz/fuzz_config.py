@@ -34,16 +34,20 @@ def TestOneInput(data: bytes) -> None:
             prefix = config._box_prefix(pick(fdp, BOX_NAMES))
         value = pick(fdp, VALUES) if fdp.ConsumeBool() else fdp.ConsumeUnicodeNoSurrogates(24)
         env[prefix + var] = value
-    others = [v for k, v in env.items() if not k.endswith("_PASSWORD")]
-    # Passwörter, die nicht zugleich als Benutzer-/Boxname o. Ä. vorkommen (die dürfen in Meldungen stehen)
-    passwords = [
-        v for k, v in env.items() if k.endswith("_PASSWORD") and len(v) >= 4 and not any(v in o for o in others)
-    ]
     try:
         configs = config.load_all(env)
     except ConfigError as exc:
-        for pw in passwords:
-            assert pw not in str(exc), (pw, str(exc))
+        # Gleiche Eingabe mit ersetzten Passwörtern: was dann noch in der Meldung steht, stammt nicht aus einem
+        # Passwort (feste Texte, Benutzer-/Boxnamen können zufällig gleich lauten).
+        masked = {k: ("\x00" * len(v) if k.endswith("_PASSWORD") else v) for k, v in env.items()}
+        try:
+            config.load_all(masked)
+            reference = ""
+        except ConfigError as ref:
+            reference = str(ref)
+        for key, pw in env.items():
+            if key.endswith("_PASSWORD") and len(pw) >= 4 and pw in str(exc):
+                assert pw in reference, (pw, str(exc))
         return
     assert configs
     for cfg in configs:

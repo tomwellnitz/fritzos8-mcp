@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fuzz-Target: Parser für XML-/Text-Antworten der Box (TR-064-Listen, AHA, Login, Ereignis-Log).
 
-Das erste Byte wählt den Parser, der Rest ist die Antwort der Box. Eine manipulierte oder kaputte Box-Antwort darf
+Das erste Byte wählt den Parser, der Rest (UTF-8) ist die Antwort der Box. Eine manipulierte oder kaputte Antwort darf
 nur zu den dokumentierten Fehlern führen (``ET.ParseError``, ``FritzError``) oder – bei DTD-Entities/externen
 Referenzen – zur Ablehnung durch defusedxml. Alles andere (``AttributeError``, ``TypeError`` …) ist ein Fund.
 Zusätzlich muss jedes Ergebnis JSON-serialisierbar sein (Tool-Ausgaben sind JSON).
@@ -13,7 +13,7 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-from fuzzhelp import data_provider, instrumented, pick, run
+from fuzzhelp import header_and_text, instrumented, run
 
 with instrumented():
     from defusedxml import DefusedXmlException
@@ -53,9 +53,8 @@ EXPECTED = (ParseError, DefusedXmlException, FritzError)
 
 
 def TestOneInput(data: bytes) -> None:
-    fdp = data_provider(data)
-    parser = pick(fdp, PARSERS)
-    text = fdp.ConsumeUnicodeNoSurrogates(fdp.remaining_bytes())
+    head, text = header_and_text(data, 1)
+    parser = PARSERS[head[0] % len(PARSERS)]
     try:
         result = parser(text)
     except EXPECTED:
