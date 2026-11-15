@@ -157,3 +157,15 @@ def test_xml_secrets_inside_a_field_are_masked() -> None:
 def test_voip_and_call_list_urls_redacted() -> None:
     out = redact("http://192.0.2.1:49000/calllist.lua?sid=0123456789abcdef&days=7")
     assert "0123456789abcdef" not in out and "days=7" in out
+
+
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf", "-5", "0", "301", "1e9"])
+def test_config_rejects_unusable_timeout(value: str) -> None:
+    """float() accepts all of these; found by fuzzing the configuration (fuzz/fuzz_config.py)."""
+    with pytest.raises(ConfigError, match="FRITZ_TIMEOUT"):
+        load({"FRITZ_USER": "mcp", "FRITZ_PASSWORD": SECRET, "FRITZ_TIMEOUT": value})
+
+
+@pytest.mark.parametrize(("value", "expected"), [("", 15.0), ("0.5", 0.5), (" 30 ", 30.0), ("300", 300.0)])
+def test_config_accepts_timeout(value: str, expected: float) -> None:
+    assert load({"FRITZ_USER": "mcp", "FRITZ_PASSWORD": SECRET, "FRITZ_TIMEOUT": value}).timeout == expected
