@@ -124,10 +124,14 @@ Releases are fully automated with [release-please](https://github.com/googleapis
    the Home Assistant add-on, and prepends the generated section to `CHANGELOG.md`.
 2. Merging the release PR creates the tag `vX.Y.Z` and the GitHub release.
 3. The release triggers `.github/workflows/release.yml`: tests, build, build-provenance attestation, sdist/wheel
-   attached to the release, PyPI upload via Trusted Publishing (only when the repository variable
-   `PUBLISH_PYPI=true`) and the multi-arch image `ghcr.io/tomwellnitz/fritzos8-mcp` (`X.Y.Z`, `X.Y`, `latest`, with SBOM
-   and provenance), and the Claude Desktop bundle `fritzos8-mcp-X.Y.Z.mcpb` attached to the release
+   attached to the release together with their SLSA provenance (`fritzos8-mcp-X.Y.Z.intoto.jsonl`), PyPI upload via
+   Trusted Publishing (only when the repository variable `PUBLISH_PYPI=true`) and the multi-arch image
+   `ghcr.io/tomwellnitz/fritzos8-mcp` (`X.Y.Z`, `X.Y`, `latest`, with SBOM and provenance), and the Claude Desktop
+   bundle `fritzos8-mcp-X.Y.Z.mcpb` attached to the release with its provenance `fritzos8-mcp-X.Y.Z.mcpb.intoto.jsonl`
    (`make mcpb` builds and smoke-tests it locally; the version in `mcpb/manifest.json` is bumped by release-please).
+   How users verify the artifacts: [SECURITY.md → Verifying release
+   artifacts](SECURITY.md#verifying-release-artifacts). After a release, check that both `*.intoto.jsonl` assets are
+   present – OpenSSF Scorecard (*Signed-Releases*) looks for them on the last five releases.
 
 Never bump versions, edit version sections of the changelog or push tags by hand. To force a specific version, add a
 commit with the footer `Release-As: X.Y.Z`. If a release was created without `RELEASE_PLEASE_TOKEN`, start
