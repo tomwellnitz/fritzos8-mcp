@@ -34,7 +34,7 @@ from typing import Any
 
 from .landevice import LanDevice
 from .oui import OuiDb, avm_mac_kind, is_locally_administered
-from .util import MAX_HOSTNAME_LENGTH, safe_mac
+from .util import MAX_HOSTNAME_LENGTH, json_objects, safe_mac
 
 DEFAULT_OFFLINE_DAYS = 90
 
@@ -170,18 +170,14 @@ class ProtectionContext:
 def mesh_node_macs(doc: dict[str, Any] | None) -> set[str]:
     """MACs of AVM mesh nodes (master/slave/meshed or AVM model) incl. their interface MACs."""
     out: set[str] = set()
-    for n in (doc or {}).get("nodes") or []:
-        if not isinstance(n, dict):
-            continue
+    for n in json_objects((doc or {}).get("nodes")):
         infra = bool(n.get("is_meshed")) or str(n.get("mesh_role") or "").lower() in {"master", "slave"}
         avm_model = (
             str(n.get("device_model") or n.get("device_manufacturer") or "").upper().startswith(("FRITZ!", "AVM"))
         )
         if not (infra or avm_model):
             continue
-        macs = [n.get("device_mac_address")] + [
-            i.get("mac_address") for i in n.get("node_interfaces") or [] if isinstance(i, dict)
-        ]
+        macs = [n.get("device_mac_address")] + [i.get("mac_address") for i in json_objects(n.get("node_interfaces"))]
         out.update(m for m in (safe_mac(x) for x in macs) if m)
     return out
 

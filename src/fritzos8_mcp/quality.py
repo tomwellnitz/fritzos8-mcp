@@ -22,7 +22,7 @@ import re
 from typing import Any
 
 from .netinfo import band_of_channel, link_signal_dbm, percent_to_dbm
-from .util import safe_mac, truthy
+from .util import json_objects, safe_mac, truthy
 
 # Raspberry Pi OUIs (IEEE MA-L registry, checked 2026-11-14: Raspberry Pi Foundation / Raspberry Pi
 # (Trading) Ltd). Used for the EEE hint (raspberrypi/linux#7511).
@@ -74,17 +74,15 @@ def lan_port_label(name: Any) -> str | None:
 
 
 def mesh_clients(doc: dict[str, Any]) -> list[dict[str, Any]]:
-    nodes = [n for n in doc.get("nodes") or [] if isinstance(n, dict)]
+    nodes = json_objects(doc.get("nodes"))
     by_uid = {str(n.get("uid")): n for n in nodes}
     iface_by_uid: dict[str, dict[str, Any]] = {}
     links: dict[str, dict[str, Any]] = {}
     for n in nodes:
-        for i in n.get("node_interfaces") or []:
-            if not isinstance(i, dict):
-                continue
+        for i in json_objects(n.get("node_interfaces")):
             iface_by_uid[str(i.get("uid"))] = i
-            for link in i.get("node_links") or []:
-                if isinstance(link, dict) and link.get("uid") is not None:
+            for link in json_objects(i.get("node_links")):
+                if link.get("uid") is not None:
                     links.setdefault(str(link["uid"]), link)
 
     def infra(n: dict[str, Any] | None) -> bool:

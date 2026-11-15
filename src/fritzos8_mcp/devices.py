@@ -35,7 +35,7 @@ from .errors import (
 from .nasremote import ToolDecorator
 from .security import Tier
 from .toolargs import READ, BoxArg
-from .util import decimal_int, safe_mac, truthy
+from .util import decimal_int, json_objects, safe_mac, truthy
 
 if TYPE_CHECKING:
     from .diagnose import DiagnoseClient
@@ -271,7 +271,7 @@ class DeviceUpdateClient:
         if self._mesh is None:
             return None
         doc = self._mesh()
-        nodes = [n for n in doc.get("nodes") or [] if isinstance(n, dict)]
+        nodes = json_objects(doc.get("nodes"))
         by_uid = {str(n.get("uid")): n for n in nodes}
         node = next(
             (
@@ -285,11 +285,9 @@ class DeviceUpdateClient:
         if node is None:
             return None
         links = []
-        for iface in node.get("node_interfaces") or []:
-            if not isinstance(iface, dict):
-                continue
-            for link in iface.get("node_links") or []:
-                if not isinstance(link, dict) or str(link.get("state") or "").upper() != "CONNECTED":
+        for iface in json_objects(node.get("node_interfaces")):
+            for link in json_objects(iface.get("node_links")):
+                if str(link.get("state") or "").upper() != "CONNECTED":
                     continue
                 other_uid = (
                     link.get("node_2_uid") if link.get("node_1_uid") == node.get("uid") else link.get("node_1_uid")

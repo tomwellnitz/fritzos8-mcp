@@ -29,7 +29,7 @@ from defusedxml import ElementTree as ET
 from .errors import FritzConnectionError, FritzError, NotFoundError
 from .myfritz import DDNS_INFO_ACTIONS
 from .tr064 import IGD_WAN_COMMON, Tr064Client, parse_host_list_xml
-from .util import box_int, safe_mac, truthy
+from .util import box_int, json_objects, safe_mac, truthy
 
 INFRA_ROLES = {"master", "slave"}
 WEAK_SIGNAL_DBM = -75  # weak_signal_clients (measured or estimated dBm)
@@ -191,15 +191,14 @@ def parse_mesh(doc: dict[str, Any], stations: dict[str, dict[str, Any]] | None =
     """Mesh document → nodes/backbone/clients. ``stations`` (MAC → TR-064 station info) adds signal percent
     for WLAN clients the mesh list carries no signal for."""
     stations = stations or {}
-    nodes = [n for n in doc.get("nodes") or [] if isinstance(n, dict)]
+    nodes = json_objects(doc.get("nodes"))
     by_uid = {str(n.get("uid")): n for n in nodes}
     iface_owner: dict[str, dict[str, Any]] = {}
     iface_by_uid: dict[str, dict[str, Any]] = {}
     for n in nodes:
-        for i in n.get("node_interfaces") or []:
-            if isinstance(i, dict):
-                iface_owner[str(i.get("uid"))] = n
-                iface_by_uid[str(i.get("uid"))] = i
+        for i in json_objects(n.get("node_interfaces")):
+            iface_owner[str(i.get("uid"))] = n
+            iface_by_uid[str(i.get("uid"))] = i
 
     def is_infra(n: dict[str, Any]) -> bool:
         return bool(n.get("is_meshed")) or str(n.get("mesh_role") or "").lower() in INFRA_ROLES
@@ -211,9 +210,9 @@ def parse_mesh(doc: dict[str, Any], stations: dict[str, dict[str, Any]] | None =
 
     links: dict[str, dict[str, Any]] = {}
     for n in nodes:
-        for i in n.get("node_interfaces") or []:
-            for link in (i or {}).get("node_links") or []:
-                if isinstance(link, dict) and link.get("uid") is not None:
+        for i in json_objects(n.get("node_interfaces")):
+            for link in json_objects(i.get("node_links")):
+                if link.get("uid") is not None:
                     links.setdefault(str(link["uid"]), link)
 
     infra = [n for n in nodes if is_infra(n)]
@@ -269,7 +268,7 @@ def parse_mesh(doc: dict[str, Any], stations: dict[str, dict[str, Any]] | None =
             "role": n.get("mesh_role"),
             "mac": safe_mac(n.get("device_mac_address")) or None,
             "firmware": n.get("device_firmware_version"),
-            "interfaces": sorted({str(i.get("type")) for i in n.get("node_interfaces") or [] if i.get("type")}),
+            "interfaces": sorted({str(i.get("type")) for i in json_objects(n.get("node_interfaces")) if i.get("type")}),
             "clients": per_node.get(node_name(n), 0),
         }
         for n in infra
