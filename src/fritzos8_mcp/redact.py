@@ -183,6 +183,16 @@ def redact_serials(obj: Any) -> Any:
     return obj
 
 
+def _args_text(args: Any) -> str:
+    """Log arguments as plain text (str, not repr – repr escapes characters, and the escaped secret would no
+    longer match)."""
+    if isinstance(args, dict):
+        return " ".join(f"{k!s}={v!s}" for k, v in args.items())
+    if isinstance(args, tuple):
+        return " ".join(str(a) for a in args)
+    return "" if args is None else str(args)
+
+
 class RedactingFilter(logging.Filter):
     """Logging filter that masks secrets in every record (message + args)."""
 
@@ -193,8 +203,11 @@ class RedactingFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         try:
             message = record.getMessage()
-        except Exception:  # pragma: no cover - malformed record, let logging handle it
-            return True
+        except Exception:
+            # Format string and arguments do not fit (e.g. "%d" with a string). Passing the record on unchanged
+            # would let logging's handleError() print msg and args raw to stderr – secrets included. Join them
+            # into one redacted text instead.
+            message = f"{record.msg!s} {_args_text(record.args)}"
         record.msg = redact(message, self._secrets)
         record.args = None
         if record.exc_text:

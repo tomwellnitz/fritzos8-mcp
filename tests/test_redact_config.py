@@ -105,6 +105,26 @@ def test_logging_filter_redacts(caplog: pytest.LogCaptureFixture) -> None:
     assert "0123abcd4567ef89" not in caplog.text
 
 
+@pytest.mark.parametrize(
+    ("msg", "args"),
+    [
+        ("login failed: %d", (SECRET,)),  # wrong conversion
+        ("no placeholder", (SECRET,)),  # surplus argument
+        ("%(user)s %(pw)d", {"user": "mcp", "pw": SECRET}),  # mapping with wrong conversion
+        ("%s %s", ([SECRET, "x"],)),  # too few arguments, secret inside a container
+    ],
+)
+def test_logging_filter_redacts_unformattable_records(msg: str, args: object) -> None:
+    """Found by fuzzing (fuzz/fuzz_redact.py): a record whose format string does not match its arguments was passed
+    on unchanged, and logging's handleError() then printed the raw arguments – incl. the secret – to stderr."""
+    record = logging.LogRecord("test.redact", logging.INFO, __file__, 1, msg, args, None)  # type: ignore[arg-type]
+    assert RedactingFilter([SECRET]).filter(record)
+    assert record.args is None
+    shown = record.getMessage()
+    assert SECRET not in shown
+    assert MASK in shown and shown.startswith(msg.split("%")[0])  # still useful for diagnosis
+
+
 # ------------------------------------------------------------------ config
 
 
