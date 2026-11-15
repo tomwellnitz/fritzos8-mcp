@@ -1,0 +1,13 @@
+# OSV-Scanner configuration for the pinned mcpb CLI (package-lock.json next to this file).
+# Read by osv-scanner and the OpenSSF Scorecard "Vulnerabilities" check.
+
+[[IgnoredVulns]]
+id = "GHSA-mrhx-c7xc-m3w5"
+# Drop this entry as soon as @anthropic-ai/mcpb depends on zod >= 4.6.6 (Dependabot checks /mcpb monthly).
+# No expiry date on purpose: the expiry key differs between osv-scanner versions (ignoreUntil/effectiveUntil).
+reason = """\
+zod 3.25.x is a build-time-only dependency of the pinned mcpb CLI (devDependency, never shipped in the \
+bundle or the Python package). mcpb uses it only to validate our own, repository-controlled manifest.json; \
+no untrusted input reaches an array schema, so the memory-exhaustion issue is not reachable. \
+The fix exists only in zod 4.6.6, and mcpb 2.1.2 (latest) still requires zod ^3.25.\
+"""
