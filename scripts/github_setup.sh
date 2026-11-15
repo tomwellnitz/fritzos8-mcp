@@ -36,7 +36,7 @@ DESCRIPTION="MCP server for AVM FRITZ!Box routers with FRITZ!OS 8 – ~160 tools
 HOMEPAGE="https://github.com/$SLUG#readme"
 TOPICS=(mcp mcp-server model-context-protocol fritzbox fritzos avm tr-064 router home-network smart-home python llm claude)
 # Job names from .github/workflows/ci.yml, pr-title.yml and security.yml (keep in sync!)
-REQUIRED_CHECKS=("lint" "typecheck" "test (py3.12)" "test (py3.13)" "docs" "package" "docker" "pr-title" "gitleaks")
+REQUIRED_CHECKS=("lint" "typecheck" "test (py3.12)" "test (py3.13)" "docs" "package" "docker" "pr-title" "gitleaks" "mcpb")
 GITHUB_ACTIONS_APP_ID=15368
 
 command -v gh >/dev/null || { echo "gh (GitHub CLI) not found" >&2; exit 1; }
