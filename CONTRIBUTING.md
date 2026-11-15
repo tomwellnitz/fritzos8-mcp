@@ -95,10 +95,15 @@ BREAKING CHANGE: clients without elicitation support must pass confirm=true.
 ```
 
 Security fixes use `fix:` (mention "security" in the description) and are announced through a GitHub security
-advisory.
+advisory. The release notes (`CHANGELOG.md` and the GitHub release) name every fixed vulnerability with its advisory
+and, where assigned, its CVE ID – add both to the PR description so the maintainer can put them into the release.
 
 ## Rules for code changes
 
+- **Tests are part of every change.** New functionality (a tool, a parameter, a parser for a box answer) comes with
+  tests in `tests/` in the same pull request, a bug fix with a regression test that fails without the fix. Tests use
+  mocks and fixtures only (see above); `make check` must stay green. Pull requests without tests for new behaviour are
+  not merged.
 - **Safety model first.** New tools are registered with the `tool(tier, annotations)` decorator in `server.py` (or a
   `register_*_tools` function): read tools never change the box; write tools call `gate.require(Tier.WRITE)` and read
   the result back (`verified`); anything risky is critical and split into `*_plan` (returns `consequence`,
