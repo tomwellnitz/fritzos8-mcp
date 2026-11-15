@@ -49,6 +49,35 @@ It only reads. Share the result in a [compatibility report](https://github.com/t
 and contribute anonymized box answers as fixtures with `fritzos8-anonymize` (see [docs/fixtures.md](docs/fixtures.md);
 review the result by hand before submitting).
 
+### Fuzzing
+
+The parsers for box answers, the redaction and the configuration are fuzzed with
+[ClusterFuzzLite](https://google.github.io/clusterfuzzlite/) and [atheris](https://github.com/google/atheris):
+
+| Target                    | What it checks                                                                          |
+|---------------------------|-----------------------------------------------------------------------------------------|
+| `fuzz/fuzz_redact.py`     | `redact`, `redact_obj`, logging filter: known secrets never in text, structures or logs |
+| `fuzz/fuzz_redact_api.py` | `redact_api`: secrets hidden in /api/v0-like answers are always masked                  |
+| `fuzz/fuzz_box_xml.py`    | TR-064/AHA/login/log parsers: only documented errors, JSON-serializable results          |
+| `fuzz/fuzz_mesh.py`       | mesh list parser: any JSON object is handled                                            |
+| `fuzz/fuzz_anonymize.py`  | `fritzos8-anonymize`: no crash, secrets under secret field names removed                |
+| `fuzz/fuzz_config.py`     | `FRITZ_*` configuration: valid result or `ConfigError`, never a password in the message |
+
+Pull requests touching code are fuzzed for five minutes (`.github/workflows/cflite-pr.yml`), `main` weekly for an hour
+(`cflite-batch.yml`); a crash fails the check and the input is attached as an artifact. The targets also run as quick
+smoke tests in pytest (`tests/test_fuzz_targets.py`, seed corpus in `fuzz/corpus/<target>/`). To fuzz locally
+(Docker, x86_64 or emulation), use the OSS-Fuzz helper:
+
+```bash
+git clone --depth 1 https://github.com/google/oss-fuzz.git && cd oss-fuzz
+python3 infra/helper.py build_image --external /path/to/fritzos8-mcp
+python3 infra/helper.py build_fuzzers --external --sanitizer address /path/to/fritzos8-mcp
+python3 infra/helper.py run_fuzzer --external /path/to/fritzos8-mcp fuzz_redact -- -max_total_time=300
+```
+
+A finding is fixed in its own `fix:` pull request with a regression test; a new parser for box answers should get a
+fuzz target (or a case in `fuzz_box_xml.py`).
+
 ## Workflow
 
 1. Open an issue or discussion first for larger changes (new tools, anything `critical`).

@@ -67,7 +67,7 @@ make check    # alles wie CI: ruff, mypy, pytest, TOOLS.md/COVERAGE-Checks, mkdo
 make help     # weitere Targets (format, docs-serve, docker, audit, snapshot …)
 ```
 - Hooks: `.pre-commit-config.yaml` (ruff, mypy, gitleaks, Privatdaten-Hook `scripts/check_private_data.py` mit Mustern aus `.private-patterns`/`CLAUDE.local.md`, pre-push: pytest + Doku-Checks). Hooks nie mit `--no-verify` umgehen.
-- CI: `.github/workflows/` – `ci.yml` (Jobs lint, typecheck, test (py3.12/3.13, 3.14 informativ), docs, package, docker), `pr-title.yml`, `security.yml` (pip-audit, gitleaks), `codeql.yml`/`dependency-review.yml`/`scorecard.yml` (nur öffentliches Repo), `release-please.yml`, `release.yml`. Alle Actions auf Commit-SHA gepinnt (Versionskommentar), Dependabot hält sie aktuell.
+- CI: `.github/workflows/` – `ci.yml` (Jobs lint, typecheck, test (py3.12/3.13, 3.14 informativ), docs, package, docker), `pr-title.yml`, `security.yml` (pip-audit, gitleaks), `codeql.yml`/`dependency-review.yml`/`scorecard.yml` (nur öffentliches Repo), `release-please.yml`, `release.yml`, `cflite-pr.yml`/`cflite-batch.yml` (ClusterFuzzLite: atheris-Targets in `fuzz/`, Build in `.clusterfuzzlite/`; Funde → eigener `fix:`-PR mit Regressionstest). Alle Actions auf Commit-SHA gepinnt (Versionskommentar), Dependabot hält sie aktuell.
 - Repo-Einstellungen als Code: `scripts/github_setup.sh OWNER/REPO` (Standard Dry-Run; `--apply` nur mit Toms Freigabe).
 - Öffentlicher Stand: `make snapshot` (= `scripts/make_public_snapshot.sh`) → Ein-Commit-Repo `../fritzos8-mcp-public` mit Privatdaten-Prüfung.
 

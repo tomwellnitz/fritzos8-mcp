@@ -61,8 +61,9 @@ already has the box password or the bearer token.
 - **Credentials** only from the environment, files or the OS keychain – never from command-line arguments.
 - **HTTP transport** only with a bearer token (≥ 32 characters, constant-time comparison), localhost bind by default.
 - **Supply chain:** dependencies locked in `uv.lock`, GitHub Actions pinned to commit SHAs, Dependabot, CodeQL,
-  pip-audit, gitleaks and OpenSSF Scorecard in CI; releases are built in GitHub Actions with build-provenance
-  attestations, PyPI Trusted Publishing and container images with SBOM and provenance (see below).
+  pip-audit, gitleaks, fuzzing (ClusterFuzzLite) and OpenSSF Scorecard in CI; releases are built in GitHub Actions
+  with build-provenance attestations, PyPI Trusted Publishing and container images with SBOM and provenance (see
+  below).
 
 ## Verifying release artifacts
 

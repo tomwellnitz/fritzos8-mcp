@@ -1,0 +1,6 @@
+
+<devicestats>
+<temperature><stats count="3" grid="900" datatime="1700000000">215,-,210</stats></temperature>
+<power><stats count="2" grid="10">150000,0</stats></power>
+<energy><stats count="2" grid="86400">120,95</stats></energy>
+</devicestats>

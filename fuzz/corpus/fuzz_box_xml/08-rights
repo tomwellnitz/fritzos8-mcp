@@ -1,0 +1,1 @@
+<rights><path>BoxAdmin</path><access>readwrite</access><path>Phone</path><access>none</access><path>NAS</path><access>readonly</access><path>HomeAuto</path><access>none</access></rights>

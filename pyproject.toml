@@ -96,6 +96,11 @@ dev = [
 demo = [
     "rich>=15.0.0",
 ]
+# ClusterFuzzLite build only (.clusterfuzzlite/build.sh): atheris ships wheels for Linux x86_64 only.
+fuzz = [
+    "atheris>=3.1.0 ; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "pyinstaller>=6.22.3 ; sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
 docs = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.8.1",
@@ -119,6 +124,8 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S104", "S105", "S106", "B017", "RUF012"]
+# Fuzz targets check their invariants with assert (atheris reports a failed assert as a finding).
+"fuzz/**" = ["S101", "S105"]
 
 [tool.mypy]
 python_version = "3.12"

@@ -1,0 +1,13 @@
+<FilterProfileList>
+<FilterProfile><FilterProfileID>filtprof1</FilterProfileID><Name>Standard</Name>
+<FilterProfileType>Standard</FilterProfileType><Monday>0</Monday><Tuesday>0</Tuesday><Wednesday>0</Wednesday>
+<Thursday>0</Thursday><Friday>0</Friday><Saturday>0</Saturday><Sunday>0</Sunday><Shared>0</Shared>
+<TimeTable></TimeTable></FilterProfile>
+<FilterProfile><FilterProfileID>filtprof2</FilterProfileID><Name>Unbeschränkt</Name>
+<FilterProfileType>Unrestricted</FilterProfileType><Shared>0</Shared></FilterProfile>
+<FilterProfile><FilterProfileID>filtprof1234</FilterProfileID><Name>Kind3Stunden</Name>
+<FilterProfileType>Personal</FilterProfileType><Monday>180</Monday><Sunday>240</Sunday><Shared>1</Shared>
+<TimeTable><TimeValue><Time>420</Time><Action>1</Action></TimeValue>
+<TimeValue><Time>1260</Time><Action>0</Action></TimeValue>
+<TimeValue><Time>4200</Time><Action>1</Action></TimeValue></TimeTable></FilterProfile>
+</FilterProfileList>
