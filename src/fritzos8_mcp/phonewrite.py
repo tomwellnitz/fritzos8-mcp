@@ -27,7 +27,7 @@ from .nasremote import ToolDecorator
 from .phone import ONTEL, VOIP, digits
 from .security import Gate, PlanStore, Tier
 from .toolargs import DESTRUCTIVE, READ, WRITE, BoxArg, TokenArg
-from .util import truthy
+from .util import decimal_int, truthy
 
 if TYPE_CHECKING:
     from .tr064 import Tr064Client
@@ -118,7 +118,7 @@ class PhoneWriter:
             name = (root.findtext(".//realName") or "").strip()
         except ET.ParseError:
             uid, name = "", ""
-        return {"uid": int(uid) if uid.isdigit() else None, "name": name or None}
+        return {"uid": decimal_int(uid), "name": name or None}
 
     def barring_add(self, number: str, name: str | None = None) -> dict[str, Any]:
         self.gate.require(Tier.WRITE)

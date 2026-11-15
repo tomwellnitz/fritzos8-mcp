@@ -13,7 +13,7 @@ import pytest
 from fritzos8_mcp.diagnose import _tenth_db
 from fritzos8_mcp.netinfo import parse_mesh, percent_to_dbm, rcpi_to_dbm
 from fritzos8_mcp.smarthome import parse_device_list, parse_stats
-from fritzos8_mcp.util import MAX_BOX_INT, box_int
+from fritzos8_mcp.util import MAX_BOX_INT, box_int, decimal_int
 
 from .test_netinfo import MESH
 
@@ -60,3 +60,12 @@ def test_mesh_with_oversized_rates() -> None:
 def test_signal_and_db_helpers_with_oversized_values() -> None:
     assert rcpi_to_dbm(HUGE) is None and percent_to_dbm(HUGE) is None
     assert _tenth_db(HUGE) is None and _tenth_db("123") == 12.3
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [("42", 42), (" 7 ", 7), (3, 3), ("٣", 3), ("²", None), ("-1", None), ("1.0", None), ("", None), (None, None),
+     ("1" * 5000, None)],
+)  # fmt: skip
+def test_decimal_int(raw: object, expected: int | None) -> None:
+    assert decimal_int(raw) == expected

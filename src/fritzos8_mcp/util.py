@@ -53,3 +53,10 @@ def box_int(value: Any) -> int | None:
     except (TypeError, ValueError):
         return None
     return number if -MAX_BOX_INT < number < MAX_BOX_INT else None
+
+
+def decimal_int(value: Any) -> int | None:
+    """Non-negative integer written only with decimal digits (IDs, channels, rates), else ``None``. Uses
+    ``str.isdecimal`` – ``isdigit`` also accepts characters such as "²" that ``int()`` rejects."""
+    text = str(value if value is not None else "").strip()
+    return box_int(text) if text.isdecimal() else None

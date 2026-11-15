@@ -26,7 +26,7 @@ from .errors import AuthError, ConfirmationRequiredError, FritzConnectionError, 
 from .nasremote import ToolDecorator
 from .security import Tier
 from .toolargs import READ, BoxArg
-from .util import truthy
+from .util import decimal_int, truthy
 
 if TYPE_CHECKING:
     from .tr064 import Tr064Client
@@ -223,7 +223,7 @@ class PhoneClient:
         def load() -> list[tuple[int, str, list[dict[str, Any]]]]:
             raw = str(self.tr064.call(ONTEL, "GetPhonebookList").get("NewPhonebookList") or "")
             books = []
-            for pid in [int(x) for x in raw.replace(" ", "").split(",") if x.isdigit()][:16]:
+            for pid in [n for n in map(decimal_int, raw.replace(" ", "").split(",")) if n is not None][:16]:
                 info = self.tr064.call(ONTEL, "GetPhonebook", NewPhonebookID=pid)
                 url = str(info.get("NewPhonebookURL") or "")
                 books.append((pid, str(info.get("NewPhonebookName") or ""), parse_phonebook(self.tr064.fetch(url))))
