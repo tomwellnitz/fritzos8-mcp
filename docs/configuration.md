@@ -94,6 +94,24 @@ claude mcp add fritzos8 -s user -- scripts/fritzos8-mcp-multi-start.sh \
 
 Check the connection with `server_status` (active tiers) and `setup_check`.
 
+With `--collector` as first argument, `scripts/fritzos8-mcp-multi-start.sh` starts the measurement series `fritzos8-collector` instead of the server (always read-only, same keychain lookup). To keep it running on macOS, a LaunchAgent such as `~/Library/LaunchAgents/local.fritzos8-collector.plist` (load with `launchctl load -w <file>`):
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>local.fritzos8-collector</string>
+  <key>ProgramArguments</key><array>
+    <string>/path/to/fritzos8-mcp/scripts/fritzos8-mcp-multi-start.sh</string>
+    <string>--collector</string>
+    <string>home=192.0.2.1:fritzos8-mcp-home</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardErrorPath</key><string>/Users/you/Library/Logs/fritzos8-collector.log</string>
+</dict></plist>
+```
+
 ## Two names per device
 
 The box keeps two names per device: the **TR-064 host name** (`name`) and the **display name** shown in the web UI (`friendly_name`, writable only via `/api/v0`). `rename_host` sets both, reads both back and reports each step. If a MAC matches several entries, it refuses before writing – pass the `uid` from `list_landevices` instead.

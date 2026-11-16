@@ -77,6 +77,7 @@ def test_multi_start_script_never_passes_password_as_argument() -> None:
     exec_line = next(line for line in text.splitlines() if line.startswith("exec "))
     assert "PASSWORT" not in exec_line and "PASSWORD" not in exec_line
     assert "unset PASSWORT" in text
+    assert '"$PROGRAMM"' in exec_line and "PROGRAMM=fritzos8-collector" in text  # --collector: same credentials path
     zsh = shutil.which("zsh")
     if zsh:  # syntax check where zsh exists (CI: ubuntu without zsh → skipped)
         assert subprocess.run([zsh, "-n", str(script)], capture_output=True).returncode == 0  # noqa: S603
