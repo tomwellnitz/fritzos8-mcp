@@ -22,9 +22,12 @@ NIGHT_XML = (
 class ChannelRadios(Radios):
     """Radios with GetChannelInfo/SetChannel per AVM doc (argument name spelled as in the doc)."""
 
-    def __init__(self, *, discard_channel: bool = False, auto_field: bool = True, **kw: Any) -> None:
+    def __init__(
+        self, *, discard_channel: bool = False, auto_off_only: bool = False, auto_field: bool = True, **kw: Any
+    ) -> None:
         super().__init__(**kw)
         self.discard_channel = discard_channel
+        self.auto_off_only = auto_off_only
         self.auto_field = auto_field
         self.auto = {1: False, 2: True, 3: False}
         self.possible = {1: "1,2,3,4,5,6,7,8,9,10,11,12,13", 2: "36,40,44,48,52,56,60,64,100,104", 3: "1,6,11"}
@@ -56,6 +59,9 @@ class ChannelRadios(Radios):
         return out
 
     def _set_channel(self, i: int, channel: int) -> dict[str, Any]:
+        if self.auto_off_only:  # live 6660/8.25: fixed channel only switches auto off, channel stays
+            self.auto[i] = channel == 0
+            return {}
         if not self.discard_channel:
             if channel == 0:
                 self.auto[i] = True
@@ -138,6 +144,26 @@ def test_set_channel_dfs_warning_and_discarded(landevices: LanDeviceClient) -> N
     assert r["verified"] is False and r["changed"] is False
     assert any("DFS" in w for w in r["warnings"])
     assert "nicht" in r["note"]
+
+
+def test_set_channel_partial_write_restores_auto_channel(landevices: LanDeviceClient) -> None:
+    # Regression (live 6660/8.25): fixed channel not applied, but auto channel switched off → was "changed: false"
+    radios = ChannelRadios(auto_off_only=True)
+    fc = wlan_fc(radios)
+    r = make_service(landevices, fc).set_wlan_channel("5", 44)
+    assert r["verified"] is False
+    assert r["restored"]["ok"] is True and r["after"]["auto_channel"] is True
+    assert r["changed"] is False  # back to the state before
+    assert any("wiederhergestellt" in w for w in r["warnings"])
+    assert ("WLANConfiguration2", "SetChannel", {"NewChannel": 0}) in fc.calls
+    assert radios.auto[2] is True
+
+
+def test_set_channel_partial_write_without_restore_reports_change(landevices: LanDeviceClient) -> None:
+    radios = ChannelRadios(auto_off_only=True)
+    radios.auto[1] = False  # auto already off: a fixed channel is just not applied → no change, no restore
+    r = make_service(landevices, wlan_fc(radios)).set_wlan_channel("2.4", 11)
+    assert r["verified"] is False and r["changed"] is False and "restored" not in r
 
 
 def test_set_channel_needs_write(landevices: LanDeviceClient) -> None:
