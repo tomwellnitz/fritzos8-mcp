@@ -1,5 +1,52 @@
 # Roadmap
 
+## Projektstand & Live-Prüfung (Stand 14.11.2026)
+
+Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box 6660 Cable (FRITZ!OS 8.25, DECT-Heizkörperthermostat). Live geprüfte Tools je Modell: [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
+
+### Stand je Stufe
+
+| Stufe | Inhalt | Stand |
+|---|---|---|
+| 1 | Geräte & Netz | fertig; live offen: `set_static_ip`, `delete_host`, critical-Tools, TR-064-2FA-Antwort |
+| 2 | WLAN/Gast, Smart Home (AHA), Diagnose/Security-Check | gebaut, Live-Test ausstehend |
+| 3 | Telefonie, Kindersicherung, Portfreigaben, DNS lesen | gebaut, Live-Test ausstehend (Teile live geprüft, siehe unten); DNS schreiben bewusst nicht gebaut |
+| 4 | Aufräum-Assistent, Schnappschüsse, Mehrbox, Netz-Doktor, Sicherheits-Score | gebaut, teils live geprüft (Live-Lesetest Stufen 4–7) |
+| 5 | NAS & Fernzugang | gebaut, teils live geprüft |
+| 6 | LAN-Ports/EEE, VPN, Powerline, Speedtest, Verbindungsqualität | gebaut, Live-Test ausstehend (Endpunkte per Browser-Mitschnitt belegt) |
+| 7 | Box-Schutz, WLAN-Einstellungen, Kindersicherung mit Profilen, Elicitation, `outputSchema` | gebaut ohne 7.2/7.3, Live-Test ausstehend |
+| 8 | Überwachung & Komfort (8.0–8.12) | gebaut, Live-Test ausstehend (Lesetest teilweise, siehe „Live-Lesetest Stufen 8–10“) |
+| 9 | Veröffentlichung, Rechte-Tabelle, Abdeckungspflege | Repo öffentlich seit 14.11.2026 (sauberer Initial-Commit), Releases über release-please |
+| 10 | Ökosystem & Intelligenz | gebaut, Live-Test ausstehend |
+
+### Live verifiziert (14.11.2026)
+
+- PBKDF2-Login, alle read-Tools der Stufe 1, Denylist (`GetSecurityKeys`/Reboot abgelehnt), `rename_host` mit Rücklesen (hin und zurück).
+- `/api/v0` an Box A: `GET /api/v0/generic/landevice`; `PUT /api/v0/generic/landevice/landevice/<UID>` mit `{"static_dhcp":"1"}` bzw. `{"friendly_name":"…"}`; `DELETE /api/v0/generic/landevice/landevice/<UID>`.
+- TR-064: `Hosts:1 X_AVM-DE_SetHostNameByMACAddress`, `LANHostConfigManagement:1 GetDNSServer`.
+- Per Browser-Mitschnitt an Box A belegt (Stufe 6): `GET eth_ports`, `PUT eth_ports/eth/<UID>` (Body **nicht** mitgeschnitten), `eee_mode` 0 = Automatisch / 2 = Aus, `GET vpn` (Schlüssel im Klartext → zentrale Schwärzung), `GET plc`.
+
+### Unbelegte Annahmen (bis zum Live-Test)
+
+- **Stufe 2:** `X_AVM-DE_GetWLANExtInfo`/`APType` für die Gast-Erkennung, Band-Feld `FrequencyBand`, Feldnamen von `X_AVM-DE_GetWPSInfo`, `UserInterface:X_AVM-DE_GetInfo`, ob Web-UI-Portfreigaben im WAN-Portmapping erscheinen, AHA-Antworten.
+- **Stufe 3:** `<New>`-Semantik der AB-Liste (V-9), Feldwerte `NewDisallow`/`NewWANAccess`, Upstream-DNS-Actions, Felder von `/api/v0/generic/dnscfg` und `/ipv6`, Fehlercode bei nicht erlaubten selbstständigen Portfreigaben.
+- **Stufe 4:** Log-Muster des Netz-Doktors, `BeaconType`-Werte für WPA3, Feldwerte für Gast-Isolierung/Auto-Update, Mesh-JSON-Felder und -Einheiten, Einheit von `ds_current_bps`, DDNS-Feldnamen, „zuletzt online“-Feld der landevice-Antwort.
+- **Stufe 6:** Green-Mode-Wert (daher kein `set_lan_power_mode`), LAN-Log-Muster, Mesh-Interface-Namen `LAN:n`, Einheit von `SignalStrength` und PLC-PHY-Raten, Verhalten des Box-Speedtest-Servers.
+- **Stufe 7:** Argumentname für den Autokanal, `NightControl`-XML, Hüllelement und Einheiten der Filterprofile.
+- **AVM-Doku-Abgleich:** V-6 (64-bit-Zähler nur in IGD), V-7 (`WANIPConn1` ist die IGD-ID, TR-064 = `WANIPConnection1`), V-8 (TR-064-Portfreigabe nur für den eigenen Rechner).
+
+### Nächste Schritte (Reihenfolge)
+
+1. Stufe 1 live abschließen: `set_static_ip` an einem Gerät, das schon fest ist (muss „unchanged“ melden), `delete_host` an einem echten Altgerät nach Freigabe.
+2. Offene Sicherheitsannahmen verifizieren: Denylist für Credential-liefernde TR-064-Actions, TR-064-Antwort bei 2FA (Codes 866/867/868), Reconnect-Nachweis.
+3. Stufe 2 live prüfen: erst read-Tools, dann `set_guest_wifi` hin und zurück nach Freigabe.
+4. Stufe 3 live prüfen (Liste in Stufe 3); DNS/DNSv6-Schreibweg per Browser-Mitschnitt belegen, erst dann bauen.
+5. Stufe 4 live prüfen (Liste „Live zu prüfen (Stufe 4)“).
+6. Stufe 6 live prüfen: zuerst `vpn_connections` auf Schlüsselreste, dann `set_lan_eee` hin und zurück nach Freigabe.
+7. Stufe 7 live prüfen: zuerst Box-Schutz an Box B, dann Schema-Warnungen im Log, Elicitation-Ablehnung; Mitschnitt-Session für 7.2/7.3.
+8. Stufe 8 live prüfen: erst alle read-Tools an beiden Boxen, dann Schreiben einzeln nach Freigabe.
+9. Stufe 10 live prüfen (Liste „Live-Prüfpunkte (Stufe 10)“).
+
 ## Stufe 1 – Geräte & Netz (v0.1, erledigt)
 
 - Auth: `login_sid.lua?version=2` mit PBKDF2 (MD5 nur auf Verlangen der Box), SID-Cache, Re-Login
@@ -63,9 +110,10 @@ Live zu prüfen (Stufe 4, erst lesend):
 9. Schreibend nach Freigabe: `wake_on_lan` an einem WoL-fähigen Gerät.
 10. Schreibend nach Freigabe: `devices_cleanup_plan` mit einem Altgerät (delete) und einer Umbenennung hin/zurück, `devices_cleanup_execute` → `verified`.
 
-## Vor einer Veröffentlichung
+## Veröffentlichung
 
-- **Git-Historie bereinigen:** Commits vor der Bereinigung vom 14.11.2026 enthalten private Daten (IPs, Schlüsselbund-Namen, Gerätenamen, Standorte). Vor dem Öffentlichstellen entweder die Historie umschreiben (z. B. `git filter-repo` mit Ersetzungsliste) oder – einfacher und sicherer – ein **neues Repo mit sauberem Initial-Commit** anlegen. Private Details liegen nur noch in der gitignorierten `CLAUDE.local.md`. **Vorbereitet (14.11.2026):** `scripts/make_public_snapshot.sh` erzeugt den sauberen Stand lokal mit Prüfung auf private Daten (Lauf ✓, siehe PLAN 9.1). Offen (nur mit Toms Freigabe): öffentliches GitHub-Repo anlegen und pushen, PyPI (Trusted Publishing + Variable `PUBLISH_PYPI`), Docker-Image, HA-Add-on-Repository, erstes Release-Tag.
+- **Erledigt (14.11.2026):** öffentliches GitHub-Repo mit sauberem Initial-Commit (private Daten der früheren Entwicklungshistorie sind nicht enthalten; private Details liegen nur in der gitignorierten `CLAUDE.local.md`). Releases laufen über release-please, PyPI per Trusted Publishing (`PUBLISH_PYPI`).
+- Weitere Kanäle (Docker-Image, HA-Add-on-Repository, Registry-Einträge) nur mit Toms Freigabe.
 
 ## Zielgruppen & Ideen (öffentliche Version)
 
