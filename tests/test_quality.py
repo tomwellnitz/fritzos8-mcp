@@ -587,3 +587,12 @@ def test_box_view_wlan_service_matches_band_not_first_answer(
     view = svc._box_view()
     assert view["wlan_connection"]["service"] == "WLANConfiguration2"
     assert view["wlan_connection"]["service_match"] == "band"
+
+
+def test_pi_tip_when_eee_off_but_still_negotiated() -> None:
+    # Regression (live 6660/8.25): after set_lan_eee off the tip still said "set_lan_eee mode=off"
+    d = {"name": "pi", "mac": "DC:A6:32:00:00:01", "connection": "lan", "port_eee_active": True}
+    off = rate_device({**d, "port_eee_mode": "off"})
+    assert "noch ausgehandelt" in off["tips"][0] and "set_lan_eee mode=off" not in off["tips"][0]
+    auto = rate_device({**d, "port_eee_mode": "auto"})
+    assert "set_lan_eee mode=off" in auto["tips"][0]
