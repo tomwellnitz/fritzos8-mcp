@@ -246,3 +246,84 @@ def test_discard_needs_critical(landevices: LanDeviceClient) -> None:
     svc, _ = service(landevices, ParentalBox(), critical=False)
     with pytest.raises(TierDisabledError):
         svc.parental.parental_tickets_discard_plan()
+
+
+# ------------------------------------------------------------------ live quirk: Standard reported as Guest ID
+
+LIVE_PROFILES_XML = """<FilterProfileList>
+<FilterProfile><FilterProfileID>filtprof2</FilterProfileID><Name></Name><FilterProfileType>Guest</FilterProfileType>
+<Shared>0</Shared><TimeTable /></FilterProfile>
+<FilterProfile><FilterProfileID>filtprof1</FilterProfileID><Name></Name><FilterProfileType>Standard</FilterProfileType>
+<Shared>0</Shared><TimeTable /></FilterProfile>
+<FilterProfile><FilterProfileID>filtprof3</FilterProfileID><Name></Name>
+<FilterProfileType>Unrestricted</FilterProfileType><Shared>0</Shared><TimeTable /></FilterProfile>
+</FilterProfileList>"""
+
+
+class GuestIdBox(ParentalBox):
+    """Live 7583/8.26: GetHostEntryByIP reports the Guest profile ID (filtprof2) for home network devices in
+    Standard (filtprof1); assigning the Guest ID to a home network device is refused."""
+
+    def __init__(self, **kw: Any) -> None:
+        super().__init__(**kw)
+        self.profile = {"192.0.2.30": "filtprof1", SERVER: "filtprof3", "192.0.2.20": "filtprof1"}
+
+    def responses(self) -> dict[tuple[str, str], Any]:
+        out = super().responses()
+        out[("X_AVM-DE_HostFilter1", "GetFilterProfiles")] = {"NewFilterProfileList": LIVE_PROFILES_XML}
+        return out
+
+    def _entry_by_ip(self, NewIPv4Address: str) -> dict[str, Any]:
+        r = super()._entry_by_ip(NewIPv4Address)
+        if r["NewFilterProfileID"] == "filtprof1":
+            r["NewFilterProfileID"] = "filtprof2"
+        return r
+
+    def _assign(self, NewIPv4Address: str, NewFilterProfileID: str) -> dict[str, Any]:
+        if NewFilterProfileID == "filtprof2":
+            raise FritzConnectionException("errorCode: 606\nerrorDescription: Action not authorized")
+        return super()._assign(NewIPv4Address, NewFilterProfileID)
+
+
+def test_device_status_maps_guest_id_of_home_device_to_standard(landevices: LanDeviceClient) -> None:
+    # Regression (live 7583/8.26): every home network device was shown in the Guest profile
+    svc, _ = service(landevices, GuestIdBox())
+    r = svc.parental.parental_device_status(mac="AA:BB:CC:DD:EE:02")
+    assert r["profile"]["type"] == "Standard" and r["profile_id"] == "filtprof1"
+    assert r["reported_profile_id"] == "filtprof2" and "Web-UI" in r["profile_note"]
+
+
+def test_set_profile_back_to_standard_is_verified(landevices: LanDeviceClient) -> None:
+    # Regression (live 7583/8.26): Unrestricted → Standard worked but was reported as verified: false
+    box = GuestIdBox()
+    box.profile["192.0.2.30"] = "filtprof3"
+    svc, _ = service(landevices, box)
+    r = svc.parental.set_parental_profile("AA:BB:CC:DD:EE:02", "filtprof1")
+    assert r["verified"] is True and r["changed"] is True and r["read_back_profile_id"] == "filtprof1"
+
+
+def test_set_profile_standard_when_already_standard_is_unchanged(landevices: LanDeviceClient) -> None:
+    # Regression (live 7583/8.26): Standard → Standard looked like "not taken over"
+    svc, fc = service(landevices, GuestIdBox())
+    r = svc.parental.set_parental_profile("AA:BB:CC:DD:EE:02", "filtprof1")
+    assert r["changed"] is False and r["verified"] is True and "profile_note" in r
+    assert not calls(fc, "AddHostEntryToFilterProfile")
+
+
+def test_set_profile_refuses_guest_profile_for_home_device(landevices: LanDeviceClient) -> None:
+    svc, fc = service(landevices, GuestIdBox())
+    with pytest.raises(InvalidParameterError, match="Gastnetz"):
+        svc.parental.set_parental_profile("AA:BB:CC:DD:EE:02", "filtprof2")
+    assert not calls(fc, "AddHostEntryToFilterProfile")
+
+
+def test_guest_network_device_keeps_guest_profile(landevices: LanDeviceClient, monkeypatch: Any) -> None:
+    from fritzos8_mcp.access import Host
+
+    svc, _ = service(landevices, GuestIdBox())
+    resolver = svc.parental.client.resolver
+    monkeypatch.setattr(
+        resolver, "resolve", lambda mac=None, ip=None: Host("gast-handy", "192.0.2.30", "AA:BB:CC:DD:EE:02", True, True)
+    )
+    r = svc.parental.parental_device_status(mac="AA:BB:CC:DD:EE:02")
+    assert r["profile"]["type"] == "Guest" and "reported_profile_id" not in r

@@ -41,6 +41,10 @@ if TYPE_CHECKING:
     from .tr064 import Tr064Client
 
 HOSTFILTER = "X_AVM-DE_HostFilter1"
+PROFILE_GUEST_ID_NOTE = (
+    "Die Box meldet für dieses Heimnetz-Gerät die ID des Gast-Profils; die Web-UI zeigt es unter Standard "
+    "(live FRITZ!Box 7583, FRITZ!OS 8.26) – ausgegeben ist das Standard-Profil, reported_profile_id = Rohwert."
+)
 WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 WEEKDAYS_DE = ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
 _TICKET = re.compile(r"^\d{6}$")
@@ -170,14 +174,31 @@ class ParentalClient:
             "source": "TR-064 X_AVM-DE_HostFilter:GetFilterProfiles (AVM-Doku 2025-09-11)",
         }
 
+    @staticmethod
+    def _effective_id(reported: str | None, profiles: list[dict[str, Any]], host: Host) -> tuple[str | None, bool]:
+        """Live (7583/8.26): GetHostEntryByIP reports the ID of the profile of type Guest for home network devices
+        that the web UI shows in "Standard" (assigning Standard = filtprof1 is accepted, assigning the Guest ID is
+        refused). For a device NOT in the guest network (host list X_AVM-DE_Guest) the Guest ID is therefore read as
+        the Standard profile. Returns (effective id, mapped?)."""
+        types = {p["id"]: str(p.get("type") or "").lower() for p in profiles}
+        if reported and types.get(reported) == "guest" and not host.guest:
+            standard = next((p["id"] for p in profiles if str(p.get("type") or "").lower() == "standard"), None)
+            if standard:
+                return standard, True
+        return reported, False
+
     def device(self, mac: str | None = None, ip: str | None = None) -> dict[str, Any]:
         host = self.resolver.resolve(mac, ip)
         entry = self._entry(host.ip)
         disallow = self.tr064.try_call(HOSTFILTER, "GetWANAccessByIP", NewIPv4Address=host.ip) or {}
         profile: dict[str, Any] | None = None
         profiles_error: dict[str, Any] | None = None
+        mapped = False
         try:
-            profile = next((p for p in self.profiles() if p["id"] == entry["profile_id"]), None)
+            profiles = self.profiles()
+            reported = entry["profile_id"]
+            entry["profile_id"], mapped = self._effective_id(reported, profiles, host)
+            profile = next((p for p in profiles if p["id"] == entry["profile_id"]), None)
         except FritzError as exc:
             profiles_error = exc.to_dict()
         result: dict[str, Any] = {
@@ -190,6 +211,9 @@ class ParentalClient:
             "note": "blocked = manuelle Internetsperre (set_internet_access), hat Vorrang vor dem Profil. "
             "wan_access = Ergebnis aus Sperre und Profil. Zeiten in Sekunden, ticket_valid_min in Minuten.",
         }
+        if mapped:
+            result["reported_profile_id"] = reported
+            result["profile_note"] = PROFILE_GUEST_ID_NOTE
         if profiles_error:
             result["profiles_error"] = profiles_error
         return result
@@ -220,24 +244,35 @@ class ParentalClient:
             known = ", ".join(f"{p['id']} ({p['name']})" for p in profiles) or "–"
             raise NotFoundError(f'Profil "{wanted}" gibt es auf dieser Box nicht (vorhanden: {known}).')
         self._protect(host, profile)
+        if str(profile.get("type") or "").lower() == "guest" and not host.guest:
+            # live (7583/8.26): the box refuses this with "not authorised"
+            raise InvalidParameterError(
+                f'Profil "{wanted}" ist das Gast-Profil – die Box weist es nur Geräten im Gastnetz zu, '
+                f"{host.name or host.ip} ist im Heimnetz.",
+                hint="Für Heimnetz-Geräte das Profil vom Typ Standard, Unrestricted oder ein eigenes verwenden.",
+            )
         before = self._entry(host.ip)
+        before_id, before_mapped = self._effective_id(before["profile_id"], profiles, host)
         base = {
             **host.as_dict(),
             "profile": {"id": profile["id"], "name": profile["name"], "type": profile["type"]},
-            "before_profile_id": before["profile_id"],
+            "before_profile_id": before_id,
         }
-        if before["profile_id"] == wanted:
+        if before_mapped:
+            base["profile_note"] = PROFILE_GUEST_ID_NOTE
+        if before_id == wanted:
             return {**base, "changed": False, "verified": True}
         self._call("AddHostEntryToFilterProfile", NewIPv4Address=host.ip, NewFilterProfileID=wanted)
-        after: dict[str, Any] = before
+        after_id = before_id
         for i in range(attempts):
-            after = self._entry(host.ip)
-            if after["profile_id"] == wanted:
+            after_id, _ = self._effective_id(self._entry(host.ip)["profile_id"], profiles, host)
+            if after_id == wanted:
                 break
             if i < attempts - 1:
                 self._sleep(wait)
-        verified = after["profile_id"] == wanted
-        result = {**base, "read_back_profile_id": after["profile_id"], "changed": verified, "verified": verified}
+        after = self._entry(host.ip) if after_id == wanted else {"wan_access": None}
+        verified = after_id == wanted
+        result = {**base, "read_back_profile_id": after_id, "changed": verified, "verified": verified}
         if not verified:
             result["note"] = (
                 "Die Box meldet weiterhin ein anderes Profil – nicht übernommen (evtl. Zusatzbestätigung/2FA)."
