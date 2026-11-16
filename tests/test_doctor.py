@@ -161,6 +161,24 @@ def test_eee_with_raspberry_pi_is_warned(fake_box: Any, landevices: LanDeviceCli
     assert r["sources"]["lan_ports"] == "ok"
 
 
+def test_eee_with_raspberry_pi_on_wan_port_used_as_lan(fake_box: Any, landevices: LanDeviceClient) -> None:
+    # Regression (live 7583/8.26): Pi on the WAN port used as LAN ("WAN:1") was missed by the EEE check
+    import copy
+
+    from .test_quality import MESH_Q
+
+    mesh = copy.deepcopy(MESH_Q)
+    for iface in mesh["nodes"][0]["node_interfaces"]:
+        if iface["name"] == "LAN:1":
+            iface["name"] = "WAN:1"
+    svc = _stage6_service(fake_box, landevices, mesh=mesh)
+    for p in fake_box.generic["eth_ports"]["eth"]:
+        if p["label"] == "LAN:1":
+            p.update({"eee_mode": "2", "eee_active": "0"})
+    pi = [f for f in svc.network_doctor()["findings"] if "Raspberry Pi" in f["finding"]]
+    assert len(pi) == 1 and pi[0]["evidence"]["port"] == "WAN:1"
+
+
 def test_no_eee_warning_when_eee_off(fake_box: Any, landevices: LanDeviceClient) -> None:
     svc = _stage6_service(fake_box, landevices)
     for p in fake_box.generic["eth_ports"]["eth"]:
