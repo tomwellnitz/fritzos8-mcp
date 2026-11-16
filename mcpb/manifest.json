@@ -3,7 +3,7 @@
   "manifest_version": "0.4",
   "name": "fritzos8-mcp",
   "display_name": "FRITZ!Box (FRITZ!OS 8)",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Local MCP server for an AVM FRITZ!Box with FRITZ!OS 8: diagnostics, devices, Wi-Fi, phone and smart home. Read-only by default.",
   "long_description": "Talks to the box in your home network over TR-064, the AHA smart home interface and the web UI's REST API. Starts read-only; write tools need **Allow changes**, and critical actions (reboot, port forwarding, firmware update) additionally need **Allow critical actions** and go through a plan/confirm step. Every write is read back, and passwords, Wi-Fi keys and PINs are never returned.\n\nNot affiliated with or endorsed by AVM / FRITZ! GmbH.",
   "author": {
