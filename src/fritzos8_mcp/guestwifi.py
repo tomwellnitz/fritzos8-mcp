@@ -106,16 +106,26 @@ class GuestWifi:
         if not result.get("verified"):
             return {**result, "session": None, "note": "Gast-WLAN nicht verifiziert eingeschaltet – keine Sitzung."}
         until = self.now() + minutes * 60
-        write_private(self._state_path, json.dumps({"until": until, "ssid": result.get("ssid")}).encode("utf-8"))
+        # Live (6660/8.25): the guest WLAN was already permanently on. Switching it off at the end would leave the
+        # box in a different state than before – such a session ends without switching off.
+        was_enabled = result.get("changed") is False
+        state = {"until": until, "ssid": result.get("ssid"), "was_enabled": was_enabled}
+        write_private(self._state_path, json.dumps(state).encode("utf-8"))
         self._arm(until)
-        return {
+        out = {
             **result,
-            "session": {"until": _iso(until), "minutes": minutes},
+            "session": {"until": _iso(until), "minutes": minutes, "was_enabled": was_enabled},
             "box_timeout": self._safe(self.box_timeout),
             "warning": "Die FRITZ!Box kann die Zeitbegrenzung per TR-064 nicht selbst übernehmen. Abgeschaltet wird "
             "durch diesen Server (solange er läuft) bzw. fritzos8-collector. Zuverlässig: in der Web-UI unter WLAN > "
             "Gastzugang 'automatisch deaktivieren' einstellen.",
         }
+        if was_enabled:
+            out["note"] = (
+                "Das Gast-WLAN war schon eingeschaltet – am Ende der Sitzung bleibt es an (Zustand wie vorher). "
+                "Sofort ausschalten: guest_wifi_session_stop."
+            )
+        return out
 
     def session_stop(self) -> dict[str, Any]:
         self.svc.gate.require(Tier.WRITE)
@@ -141,6 +151,9 @@ class GuestWifi:
         st = self._load()
         if st is None or self.now() < float(st.get("until") or 0):
             return None
+        if st.get("was_enabled"):
+            self._clear()
+            return {"ok": True, "kept_enabled": True, "note": "Gast-WLAN war vor der Sitzung schon an – bleibt an."}
         try:
             result = self.svc.wlan.set_enable(self.svc.wlan.guest()["service"], False)
         except FritzError as exc:
@@ -278,7 +291,7 @@ def register_guest_tools(tool: ToolDecorator, svc: Callable[[str | None], GuestW
     ) -> dict[str, Any]:
         """Schaltet das Gast-WLAN für eine begrenzte Zeit ein (SetEnable + Rücklesen) und danach automatisch aus –
         abgeschaltet wird durch diesen Server bzw. fritzos8-collector (die Box kann die Zeit per TR-064 nicht selbst
-        übernehmen; Hinweis im Ergebnis)."""
+        übernehmen; Hinweis im Ergebnis). War das Gast-WLAN schon an, bleibt es nach Ablauf an (Zustand wie vorher)."""
         return svc(box).session_start(minutes)
 
     @tool(Tier.WRITE, WRITE)

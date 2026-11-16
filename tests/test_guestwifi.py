@@ -64,6 +64,17 @@ def test_session_start_and_expiry(landevices: LanDeviceClient) -> None:
     assert radios.state[3]["NewEnable"] is False and svc.guest.session_status()["session"] is None
 
 
+def test_session_on_already_enabled_guest_wlan_keeps_it_on(landevices: LanDeviceClient) -> None:
+    # Regression (live 6660/8.25): the guest WLAN was permanently on; the session would have switched it off
+    svc, radios, _, clock = setup(landevices)
+    radios.state[3]["NewEnable"] = True
+    r = svc.guest.session_start(15)
+    assert r["changed"] is False and r["session"]["was_enabled"] is True and "bleibt es an" in r["note"]
+    clock.t += 15 * 60 + 1
+    assert svc.guest.enforce_expiry()["kept_enabled"] is True
+    assert radios.state[3]["NewEnable"] is True and svc.guest.session_status()["session"] is None
+
+
 def test_session_validation_and_stop(landevices: LanDeviceClient) -> None:
     svc, radios, _, _ = setup(landevices)
     with pytest.raises(InvalidParameterError):
