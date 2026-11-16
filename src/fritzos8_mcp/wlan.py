@@ -387,15 +387,41 @@ class WlanSettings:
                 break
             if i < attempts - 1:
                 self.wlan._sleep(wait)
+        after_state = {"channel": after["channel"], "auto_channel": after["auto_channel"]}
+        # Live (6660/8.25): SetChannel with a fixed channel switched the auto channel OFF but kept the old channel.
+        # Such a partial write is a change – report it and put the auto channel back instead of hiding it.
+        partial = not verified and after_state != base["before"]
+        restored: dict[str, Any] | None = None
+        if partial and channel != 0 and before["auto_channel"] is True and after["auto_channel"] is False:
+            self.tr064.call(service, "SetChannel", NewChannel=0)
+            back = self.channel_info(service)
+            after_state = {"channel": back["channel"], "auto_channel": back["auto_channel"]}
+            restored = {"ok": back["auto_channel"] is True, "after": after_state}
+            warnings.append(
+                "Die Box hat den Kanal nicht übernommen, aber die automatische Kanalwahl abgeschaltet – "
+                + (
+                    "automatische Kanalwahl wiederhergestellt."
+                    if restored["ok"]
+                    else "Wiederherstellen fehlgeschlagen: automatische Kanalwahl ist AUS, in der Web-UI unter "
+                    "WLAN > Funkkanal prüfen."
+                )
+            )
+        elif partial:
+            warnings.append(
+                "Teilweise übernommen: die Box meldet einen anderen Zustand als vorher, aber nicht den gewünschten "
+                f"(vorher {base['before']}, jetzt {after_state})."
+            )
         result: dict[str, Any] = {
             **base,
-            "after": {"channel": after["channel"], "auto_channel": after["auto_channel"]},
-            "changed": bool(verified),
+            "after": after_state,
+            "changed": bool(verified) or (partial and not (restored and restored["ok"])),
             "verified": bool(verified),
             "warnings": warnings,
             "note": "Geräte in diesem Band verbinden sich kurz neu. Das Gast-WLAN im selben Band nutzt denselben "
             "Kanal.",
         }
+        if restored is not None:
+            result["restored"] = restored
         if verified is None:
             result["note"] = (
                 "Automatische Kanalwahl gesendet, die Box meldet aber keinen Autokanal-Status – in der Web-UI "
