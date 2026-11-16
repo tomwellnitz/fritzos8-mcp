@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -873,6 +874,42 @@ class FritzService:
             )
         return host
 
+    # Live (7583/8.26): AddPortMapping makes the box pin the target's IPv4 ("always same IP"), and deleting the
+    # forward leaves it pinned. Pins set that way are remembered per box and undone by delete_port_forward_execute.
+    AUTO_STATIC_NOTE = (
+        "Die FRITZ!Box weist dem Zielgerät beim Anlegen einer Portfreigabe dauerhaft eine feste IPv4 zu "
+        "(„Diesem Netzwerkgerät immer die gleiche IPv4-Adresse zuweisen“). delete_port_forward_execute hebt sie "
+        "wieder auf, wenn sie erst durch die Freigabe entstanden ist."
+    )
+
+    def _auto_static_path(self) -> Path:
+        from .paths import ensure_private_dir, safe_component, state_dir
+
+        base = ensure_private_dir((self._state_root or state_dir()) / safe_component(self.box_host))
+        return base / "port_forward_static_ip.json"
+
+    def _auto_static_load(self) -> dict[str, str]:
+        try:
+            data = json.loads(self._auto_static_path().read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+        return {str(k): str(v) for k, v in data.items()} if isinstance(data, dict) else {}
+
+    def _auto_static_save(self, data: dict[str, str]) -> None:
+        from .paths import write_private
+
+        path = self._auto_static_path()
+        if data:
+            write_private(path, json.dumps(data, sort_keys=True).encode("utf-8"))
+        elif path.exists():
+            path.unlink()
+
+    def _static_of(self, mac: str) -> bool | None:
+        try:
+            return self.landevices.find(mac).static_dhcp
+        except FritzError:
+            return None
+
     def add_port_forward_plan(
         self,
         protocol: str,
@@ -903,6 +940,8 @@ class FritzService:
             )
         if not host.active:
             warnings.append("Das Zielgerät ist gerade nicht aktiv.")
+        if host.mac and self._static_of(host.mac) is False:
+            warnings.append(self.AUTO_STATIC_NOTE)
         params = {
             "protocol": proto,
             "external_port": ext,
@@ -966,7 +1005,16 @@ class FritzService:
             "description": desc,
         }
         self.plans.redeem(token, "add_port_forward", params, identity)
-        return self.ports.add(found["service"], found["host"], proto, ext, internal or ext, desc or "")
+        host = found["host"]
+        static_before = self._static_of(host.mac) if host.mac else None
+        result = self.ports.add(found["service"], host, proto, ext, internal or ext, desc or "")
+        static_after = self._static_of(host.mac) if host.mac else None
+        if static_before is False and static_after is True:
+            record = self._auto_static_load()
+            record[host.mac] = host.ip
+            self._auto_static_save(record)
+            result["static_ip"] = {"before": False, "after": True, "set_by_box": True, "note": self.AUTO_STATIC_NOTE}
+        return result
 
     def delete_port_forward_plan(self, protocol: str, external_port: int) -> dict[str, Any]:
         self.gate.require(Tier.CRITICAL)
@@ -975,12 +1023,19 @@ class FritzService:
         entry = require_present(self.ports.find(proto, ext), proto, ext)
         params = {"protocol": proto, "external_port": ext}
         token = self.plans.issue("delete_port_forward", params, f"{service}|{sorted(entry.items())}")
+        consequence = (
+            f"Die Portfreigabe {ext}/{proto} → {entry.get('internal_client')}:{entry.get('internal_port')} wird "
+            "gelöscht; der Dienst ist danach aus dem Internet nicht mehr über diese Freigabe erreichbar."
+        )
+        if str(entry.get("internal_client") or "") in self._auto_static_load().values():
+            consequence += (
+                " Die feste IP, die die Box beim Anlegen gesetzt hat, wird aufgehoben, falls keine weitere "
+                "Freigabe auf das Gerät zeigt."
+            )
         return {
             "action": "delete_port_forward",
             "target": {"service": service, **entry},
-            "consequence": f"Die Portfreigabe {ext}/{proto} → {entry.get('internal_client')}:"
-            f"{entry.get('internal_port')} wird gelöscht; der Dienst ist danach aus dem Internet nicht mehr "
-            "über diese Freigabe erreichbar.",
+            "consequence": consequence,
             "token": token,
             "token_valid_s": int(self.plans.ttl),
             "execute_with": {"tool": "delete_port_forward_execute", "protocol": proto, "external_port": ext},
@@ -1003,7 +1058,31 @@ class FritzService:
                 return ""
 
         self.plans.redeem(token, "delete_port_forward", {"protocol": proto, "external_port": ext}, identity)
-        return self.ports.delete(found["service"], found["entry"], proto, ext)
+        result = self.ports.delete(found["service"], found["entry"], proto, ext)
+        if result.get("verified"):
+            restored = self._undo_auto_static(str(found["entry"].get("internal_client") or ""))
+            if restored is not None:
+                result["static_ip_restored"] = restored
+        return result
+
+    def _undo_auto_static(self, ip: str) -> dict[str, Any] | None:
+        """Unpin a fixed IP that only exists because of a port forward created here – once no forward to that
+        IP is left. Pins the user set themselves are never in the record and stay untouched."""
+        record = self._auto_static_load()
+        mac = next((m for m, i in record.items() if i == ip), None)
+        if mac is None:
+            return None
+        remaining = [m for m in self.ports.list_all()["port_forwards"] if m.get("internal_client") == ip]
+        if remaining:
+            return {"mac": mac, "kept": True, "note": f"Weitere Portfreigaben zeigen noch auf {ip} – feste IP bleibt."}
+        try:
+            r = self.landevices.set_static_dhcp(mac, False)
+        except FritzError as exc:
+            return {"mac": mac, "ok": False, "error": exc.to_dict()}
+        if r.get("verified"):
+            record.pop(mac, None)
+            self._auto_static_save(record)
+        return {"mac": mac, "ok": True, "static_dhcp": r.get("static_dhcp"), "verified": r.get("verified")}
 
     def reboot_plan(self) -> dict[str, Any]:
         self.gate.require(Tier.CRITICAL)
