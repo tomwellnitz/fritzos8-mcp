@@ -8,7 +8,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 
 | Stufe | Inhalt | Stand |
 |---|---|---|
-| 1 | Geräte & Netz | live an Box A inkl. Schreiben (Umbenennen hin/zurück), lesend an Box B |
+| 1 | Geräte & Netz | live lesend an beiden Boxen; Schreiben: `rename_host` live (Box A, hin/zurück), `set_static_ip`/`delete_host` ausstehend |
 | 2 | WLAN/Gast, Smart Home (AHA), Diagnose/Security-Check | live lesend an beiden Boxen |
 | 3 | Telefonie, Kindersicherung, Portfreigaben, DNS lesen | live an Box A inkl. Schreiben (Internetsperre, AB an/aus), lesend an Box B; DNS schreiben bewusst nicht gebaut |
 | 4–7 | Aufräum-Assistent, Schnappschüsse, Mehrbox, Netz-Doktor; NAS & Fernzugang; LAN-Ports/VPN/Powerline/Qualität; Box-Schutz, WLAN-Einstellungen, Profile, Elicitation, `outputSchema` | live lesend an beiden Boxen („Live-Lesetest Stufen 4–7“), Korrekturen eingearbeitet und 🟡 nachzutesten; Schreib-/critical-Tools noch nicht live geprüft; 7.2/7.3 nicht gebaut |
@@ -19,7 +19,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 ### Live verifizierte Schnittstellen (Auszug)
 
 - PBKDF2-Login, Denylist (`GetSecurityKeys`/Reboot abgelehnt), Rücklesen nach jedem Schreiben.
-- `/api/v0` an Box A: `GET /api/v0/generic/landevice`; `PUT /api/v0/generic/landevice/landevice/<UID>` mit `{"static_dhcp":"1"}` bzw. `{"friendly_name":"…"}`; `DELETE /api/v0/generic/landevice/landevice/<UID>`.
+- `/api/v0` an Box A (nur die Aufrufe, nicht die Tools `set_static_ip`/`delete_host`): `GET /api/v0/generic/landevice`; `PUT /api/v0/generic/landevice/landevice/<UID>` mit `{"static_dhcp":"1"}` bzw. `{"friendly_name":"…"}`; `DELETE /api/v0/generic/landevice/landevice/<UID>`.
 - TR-064: `Hosts:1 X_AVM-DE_SetHostNameByMACAddress`, `LANHostConfigManagement:1 GetDNSServer`, Upstream-DNS (`X_AVM_DE_GetDNSServer`), Gast-Isolierung (`NewX_AVM-DE_UserIsolation`), `X_AVM-DE_BuildType`, IGD `WANIPv6Firewall1`.
 - Per Browser-Mitschnitt an Box A belegt (Stufe 6): `GET eth_ports`, `PUT eth_ports/eth/<UID>` (Body **nicht** mitgeschnitten), `eee_mode` 0 = Automatisch / 2 = Aus, `GET vpn` (Schlüssel im Klartext → zentrale Schwärzung), `GET plc`.
 
@@ -34,7 +34,8 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 
 ### Nächste Schritte (Reihenfolge)
 
-1. **🟡-Punkte aus COMPATIBILITY nachtesten** (Korrekturen aus dem Lesetest sind eingebaut, Details unter „Live-Lesetest Stufen 4–7“/„8–10“):
+1. **Stufe 1 abschließen:** `set_static_ip` an einem Gerät, das schon fest ist (muss „unchanged“ melden); `delete_host` an einem echten Altgerät nach Freigabe. Belegt sind bisher nur die `/api/v0`-Aufrufe dahinter, nicht die Tools mit Rücklesen/`verified`.
+2. **🟡-Punkte aus COMPATIBILITY nachtesten** (Korrekturen aus dem Lesetest sind eingebaut, Details unter „Live-Lesetest Stufen 4–7“/„8–10“):
    - `mesh_overview`/`device_connection_quality`: WLAN-Signal (Anteil „unbekannt“ ≈ 0, `signal_source`) an beiden Boxen
    - `test_my_device`: `box_view.wlan_connection.service` = `quality.tr064.service` (Box A)
    - `isp_report`: `insufficient_data` bei wenigen Messpunkten, Bericht nach ≥ 1 h Collector (beide Boxen)
@@ -44,9 +45,9 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
    - `vpn_connections`: `last_error` bei verbundener Verbindung (Box A)
    - Sitzungsablauf: `smarthome_list_devices`/`smarthome_overview` nach > 20 min Leerlauf ohne Fehler (Box B)
    - Box-Grenzen, kein Nachtest nötig: `line_diagnostics` an Kabel (`unknown`), `devices_change_counter` = 0 an Box A
-2. **Schreib-/critical-Tools ab Stufe 4** einzeln nach Freigabe (Listen je Stufe unten), zuerst `set_lan_eee` und `set_wlan_channel` hin/zurück, Elicitation-Ablehnung bei einem harmlosen critical-Ablauf.
-3. **Langzeit-Messreihe:** `fritzos8-collector` ≥ 24 h an beiden Boxen, danach `isp_report` (8.2) und `history_anomalies` (10.1).
-4. **Browser-Mitschnitt** für 7.2/7.3 (DNS/DNSv6, Portfreigaben über die Web-UI) – Checkliste unter Stufe 7; erst danach bauen.
+3. **Schreib-/critical-Tools ab Stufe 4** einzeln nach Freigabe (Listen je Stufe unten), zuerst `set_lan_eee` und `set_wlan_channel` hin/zurück, Elicitation-Ablehnung bei einem harmlosen critical-Ablauf.
+4. **Langzeit-Messreihe:** `fritzos8-collector` ≥ 24 h an beiden Boxen, danach `isp_report` (8.2) und `history_anomalies` (10.1).
+5. **Browser-Mitschnitt** für 7.2/7.3 (DNS/DNSv6, Portfreigaben über die Web-UI) – Checkliste unter Stufe 7; erst danach bauen.
 
 ## Stufe 1 – Geräte & Netz (v0.1, erledigt)
 
