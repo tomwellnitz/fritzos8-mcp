@@ -6,7 +6,7 @@ Welche Modelle und FRITZ!OS-Versionen mit welchem Ergebnis geprüft wurden. „l
 
 | Modell | FRITZ!OS | Anschluss | Stand | Ergebnis |
 |---|---|---|---|---|
-| FRITZ!Box 7583 | 8.26 | DSL/G.fast, PPP, DS-Lite | live 14.11.2026 | Stufen 1–3 inkl. Schreiben (Umbenennen, Internetsperre, AB an/aus); Stufen 8–10 lesend (siehe unten); Korrekturen aus dem Lesetest eingearbeitet |
+| FRITZ!Box 7583 | 8.26 | DSL/G.fast, PPP, DS-Lite | live 14.–16.11.2026 | Stufen 1–3 inkl. Schreiben (Umbenennen, feste IP aufheben/setzen, Eintrag löschen, Internetsperre, AB an/aus); Stufen 8–10 lesend (siehe unten); Korrekturen aus dem Lesetest eingearbeitet |
 | FRITZ!Box 6660 Cable | 8.25 | Kabel (DOCSIS), öffentliche IPv4, kein IPv6 | live 14.11.2026 | lesend wie oben; Smart-Home-REST mit DECT-Thermostat, Thermostat-Schreibtest (Soll-Temperatur hin/zurück) |
 
 ## Bereiche je Box
@@ -16,6 +16,7 @@ Welche Modelle und FRITZ!OS-Versionen mit welchem Ergebnis geprüft wurden. „l
 | Bereich / Tool | 7583 (8.26, DSL) | 6660 Cable (8.25) |
 |---|---|---|
 | `setup_check` | ✅ | ✅ |
+| `set_static_ip` (unverändert, aufheben, festlegen), `delete_host` | ✅ schreibend, `verified` = Rücklesen (16.11.) | – |
 | `wan_status` | ✅ (IPv4-Feld korrigiert, DS-Lite) | ✅ |
 | `line_diagnostics` | ✅ DSL inkl. Kabeltest/Spektrum | 🟡 Kabel = `unknown` (per TR-064 nicht lesbar) |
 | `get_dns_settings` (inkl. Upstream) | ✅ | ✅ |
@@ -32,7 +33,7 @@ Welche Modelle und FRITZ!OS-Versionen mit welchem Ergebnis geprüft wurden. „l
 | `mesh_overview`, `device_connection_quality` (WLAN-Signal) | 🟡 Signal fehlte → korrigiert (dBm laut Schema v8.7 + TR-064-Signal-%), nachtesten | 🟡 wie 7583 |
 | `test_my_device` (`box_view.wlan_connection.service`) | 🟡 meldete `WLANConfiguration1` statt `…2` (5 GHz) → korrigiert, nachtesten | – |
 | `isp_report` | 🟡 mit 1 Messpunkt „keine Ausfälle“ → jetzt `insufficient_data`, nachtesten | 🟡 wie 7583 |
-| `devices_cleanup_report`/`_plan` | ❌→🟡 schlug VPN-Peer und Powerline (AVM-LA-MAC) zum Löschen vor → Schutzregeln, nachtesten | ❌→🟡 98 Geräte: „gleiche IP“ als Duplikat-Löschgrund für echte Geräte mit Hersteller-MAC, „K--chen“-Umbenennung, Hersteller „China“ → Regeln verschärft, nachtesten |
+| `devices_cleanup_report`/`_plan` | ✅ Report nachgetestet (16.11.): VPN-Peer und Powerline nicht mehr vorgeschlagen, „zuletzt online“ = `lastused`; `_plan` nicht live geprüft | ❌→🟡 98 Geräte: „gleiche IP“ als Duplikat-Löschgrund für echte Geräte mit Hersteller-MAC, „K--chen“-Umbenennung, Hersteller „China“ → Regeln verschärft, nachtesten |
 | `myfritz_status` (`mcp_benutzer_internet`) | 🟡 Text widersprach den Feldern → Recht/Fernzugriff getrennt, nachtesten | – |
 | `online_monitor` | 🟡 Sync-Gruppe „VDSL“ bei G.fast, `X_AVM-DE_GetAddonInfos` fehlt → Rohwert gekennzeichnet + Fallback `GetCommonLinkProperties`, nachtesten | – |
 | `vpn_connections` | 🟡 Fehlercode bei verbundener Verbindung → jetzt `last_error` (historisch), nachtesten | – |
