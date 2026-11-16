@@ -238,3 +238,13 @@ def test_client_measurement_included(fake_box: Any, landevices: LanDeviceClient)
     client = [f for f in r["findings"] if f["area"] == "client"]
     assert client and client[0]["severity"] == "critical" and client[0]["relevant_to_symptom"] is True
     assert r["sources"]["client_measurement"] == "übergeben"
+
+
+def test_eee_off_but_still_negotiated_recommends_relink(fake_box: Any, landevices: LanDeviceClient) -> None:
+    # Regression (live 6660/8.25): EEE switched off at the port, but the running link kept it negotiated
+    svc = _stage6_service(fake_box, landevices)
+    for p in fake_box.generic["eth_ports"]["eth"]:
+        p.update({"eee_mode": "2"})  # eee_active of LAN:1 stays "1"
+    pi = [f for f in svc.network_doctor()["findings"] if "Raspberry Pi" in f["finding"]]
+    assert len(pi) == 1 and "noch ausgehandelt" in pi[0]["recommendation"]
+    assert "set_lan_eee" not in pi[0]["recommendation"]

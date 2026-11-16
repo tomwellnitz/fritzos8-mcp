@@ -200,10 +200,17 @@ def rate_device(d: dict[str, Any]) -> dict[str, Any]:
                     "Gegenstelle oder Green Mode prüfen."
                 )
         if d.get("port_eee_active") and is_raspberry_pi(d.get("mac")):
-            tips.append(
-                "Raspberry Pi mit aktivem EEE am Port: bekannter Fehler (Link-Flapping, Paketverlust) – EEE aus "
-                f"(set_lan_eee mode=off oder am Pi). {EEE_BUG_LINKS[0]}"
-            )
+            if d.get("port_eee_mode") == "off":
+                tips.append(
+                    "Raspberry Pi: EEE ist am Port schon aus, aber noch ausgehandelt – die Box baut den laufenden "
+                    "Link nicht neu auf. Netzwerkkabel kurz trennen bzw. Pi neu starten oder am Pi abschalten "
+                    f"(ethtool --set-eee eth0 eee off). {EEE_BUG_LINKS[0]}"
+                )
+            else:
+                tips.append(
+                    "Raspberry Pi mit aktivem EEE am Port: bekannter Fehler (Link-Flapping, Paketverlust) – EEE aus "
+                    f"(set_lan_eee mode=off oder am Pi). {EEE_BUG_LINKS[0]}"
+                )
             rating = "schwach" if rating in {None, "gut", "ok"} else rating
     return {**d, "rating": rating or "unbekannt", "tips": tips}
 

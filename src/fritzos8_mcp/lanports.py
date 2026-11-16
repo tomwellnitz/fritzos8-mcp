@@ -38,8 +38,15 @@ BOX_WIDE_NOTE = (
     "nach Änderung an einem Port standen alle Ports auf demselben Wert)."
 )
 RELINK_NOTE = (
-    "Die betroffenen Ports handeln den Link danach neu aus – kurze Unterbrechung (Sekunden) für dort "
+    "Je nach Modell handeln die Ports den Link danach neu aus – kurze Unterbrechung (Sekunden) für dort "
     "angeschlossene Geräte möglich."
+)
+# Live (6660/8.25): after eee_mode "2" (off) the running link kept EEE negotiated (eee_active "1") for minutes –
+# the setting only applies once the link is re-established.
+STILL_ACTIVE_NOTE = (
+    "EEE ist ausgeschaltet, auf {ports} aber noch ausgehandelt (eee_active): die Box baut den laufenden Link nicht "
+    "neu auf. Wirksam wird es erst nach einem neuen Link – Netzwerkkabel kurz trennen bzw. Gerät neu starten – "
+    "oder EEE direkt am Gerät abschalten (Linux: ethtool --set-eee eth0 eee off)."
 )
 SILENT_DISCARD = (
     "Die FRITZ!Box hat die Anfrage angenommen, den Wert aber nicht übernommen. Typische Ursache: "
@@ -185,8 +192,11 @@ class LanPortClient:
                     "after": EEE_MODES.get(got, got),
                     "written": uid in written,
                     "verified": got == value,
+                    "eee_active": truthy((after.get(uid) or {}).get("eee_active")),
                 }
             )
+            if value == EEE_VALUES["off"] and results[-1]["eee_active"]:
+                results[-1]["still_negotiated"] = True
         also_changed = [
             {"port": label.get(uid), "before": EEE_MODES.get(old, old), "after": EEE_MODES.get(new, new)}
             for uid, old in before_by_uid.items()
@@ -208,6 +218,9 @@ class LanPortClient:
                 "Die Box hat weitere Ports mitgeändert bzw. Ports waren nach dem ersten Schreiben schon "
                 "umgestellt – EEE wirkt auf diesem Modell box-weit."
             )
+        still = [str(r["port"]) for r in results if r.get("still_negotiated")]
+        if still:
+            out["notes"].append(STILL_ACTIVE_NOTE.format(ports=", ".join(still)))
         if not written:
             out["notes"].append("Alle Ziel-Ports hatten den Wert schon – nichts geschrieben.")
         if not out["verified"]:

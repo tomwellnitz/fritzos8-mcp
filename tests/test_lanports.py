@@ -75,9 +75,23 @@ def test_set_eee_single_port_sends_only_field(ports: LanPortClient, fake_box: Fa
         "after": "off",
         "written": True,
         "verified": True,
+        "eee_active": True,  # the fake, like the live 6660, does not renegotiate the running link
+        "still_negotiated": True,
     }
     assert r["other_ports_changed"] == []
     assert r["box_wide_effect"] is False
+
+
+def test_set_eee_off_warns_when_still_negotiated(ports: LanPortClient, fake_box: FakeBox) -> None:
+    # Regression (live 6660/8.25): EEE off, but the running link kept EEE negotiated – the old note claimed relink
+    r = ports.set_eee("LAN:1", "off")
+    assert r["verified"] is True and r["ports"][0]["still_negotiated"] is True
+    assert any("noch ausgehandelt" in n and "LAN:1" in n for n in r["notes"])
+    ports_eth = fake_box.generic["eth_ports"]["eth"]
+    next(p for p in ports_eth if p["label"] == "LAN:1")["eee_active"] = "0"
+    r2 = ports.set_eee("LAN:1", "auto")
+    assert "still_negotiated" not in r2["ports"][0]
+    assert not any("noch ausgehandelt" in n for n in r2["notes"])
 
 
 def test_set_eee_reports_box_wide_change(ports: LanPortClient, fake_box: FakeBox) -> None:

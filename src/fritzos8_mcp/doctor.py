@@ -495,7 +495,12 @@ class NetworkDoctor:
                     f"({'aktiv ausgehandelt' if port['eee_active'] else 'automatisch'}).",
                     "bekannter Fehler: Raspberry Pi (v. a. Pi 5, neuere Kernel) mit EEE → Link-Flapping und "
                     "Paketverlust, z. B. DNS-Ausfälle, wenn der Pi DNS-Server ist",
-                    "EEE abschalten: set_lan_eee port=" + str(port["label"]) + " mode=off (wirkt ggf. box-weit) "
+                    (
+                        "EEE ist am Port schon aus, aber noch ausgehandelt: Link neu aufbauen (Kabel kurz trennen "
+                        "bzw. Pi neu starten) oder am Pi abschalten (ethtool --set-eee eth0 eee off)."
+                    )
+                    if port["eee_mode"] == "off"
+                    else "EEE abschalten: set_lan_eee port=" + str(port["label"]) + " mode=off (wirkt ggf. box-weit) "
                     "oder am Pi (ethtool --set-eee eth0 eee off).",
                     mac=c.get("mac"),
                     port=port["label"],
