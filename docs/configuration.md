@@ -112,6 +112,8 @@ With `--collector` as first argument, `scripts/fritzos8-mcp-multi-start.sh` star
 </dict></plist>
 ```
 
+macOS restricts access to the local network per app ("Local Network" privacy). A process started by launchd has no such permission of its own: a box in the Mac's own subnet then fails with `No route to host` (`Errno 65`), while boxes reached through a VPN still work. Either allow it under *System Settings → Privacy & Security → Local Network* if an entry for the collector appears there, or start the script from a terminal that already has the permission, e.g. `nohup scripts/fritzos8-mcp-multi-start.sh --collector … >> ~/Library/Logs/fritzos8-collector.log 2>&1 &` (runs until the next restart).
+
 ## Two names per device
 
 The box keeps two names per device: the **TR-064 host name** (`name`) and the **display name** shown in the web UI (`friendly_name`, writable only via `/api/v0`). `rename_host` sets both, reads both back and reports each step. If a MAC matches several entries, it refuses before writing – pass the `uid` from `list_landevices` instead.
