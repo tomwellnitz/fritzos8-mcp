@@ -321,6 +321,6 @@ Alle 37 TR-064-Services (375 Actions), das AHA-HTTP-Interface (36 Kommandos) und
 
 ## Offene Punkte / Ideen
 
-- Live-Verifikation der restlichen Stufe-1-Tools (`set_static_ip`, `delete_host`, critical) und aller Stufe-2-Tools gegen eine echte Box
+- Live-Verifikation der restlichen Stufe-1-Tools (`set_static_ip`, `delete_host`, critical) und der Schreib-Tools ab Stufe 2 gegen eine echte Box (Lese-Tools sind live geprüft, siehe „Projektstand & Live-Prüfung“)
 - `list_hosts` und `list_landevices` zu einer zusammengeführten Ansicht verbinden
 - Fixture-Recorder mit Anonymisierung für reale Antworten verschiedener Modelle
