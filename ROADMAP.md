@@ -22,7 +22,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 - `set_static_ip` und `delete_host` an Box A (16.11.2026): `verified` stimmte bei jedem Aufruf mit unabhängigem Rücklesen überein; feste IP an einem schon festen Gerät → `changed: false` ohne Schreibzugriff.
 - `/api/v0` an Box A: `GET /api/v0/generic/landevice`; `PUT /api/v0/generic/landevice/landevice/<UID>` mit `{"static_dhcp":"1"}` bzw. `{"friendly_name":"…"}`; `DELETE /api/v0/generic/landevice/landevice/<UID>`.
 - TR-064: `Hosts:1 X_AVM-DE_SetHostNameByMACAddress`, `LANHostConfigManagement:1 GetDNSServer`, Upstream-DNS (`X_AVM_DE_GetDNSServer`), Gast-Isolierung (`NewX_AVM-DE_UserIsolation`), `X_AVM-DE_BuildType`, IGD `WANIPv6Firewall1`.
-- Nachtest an Box A (16.11.2026, lesend): WLAN-Signal in Mesh-Liste (dBm), `test_my_device`-Dienstzuordnung, `myfritz_status`, `vpn_connections`, `online_monitor` (`mode_note`, 64-bit-Volumen über IGD `GetAddonInfos` – V-6 belegt), `isp_report` mit 1 Messpunkt → `insufficient_data`. Mesh-Interface-Namen live: `LAN:n`, `WAN:n` (WAN-Port als LAN), `AP:2G:0`, `AP:5G:0`.
+- Nachtest an Box A (16.11.2026, lesend): WLAN-Signal in Mesh-Liste (dBm), `test_my_device`-Dienstzuordnung, `myfritz_status`, `vpn_connections`, `online_monitor` (`mode_note`, 64-bit-Volumen über IGD `GetAddonInfos` – V-6 belegt), `isp_report` mit 1 Messpunkt → `insufficient_data`. Mesh-Interface-Namen live: `LAN:n`, `WAN:n` (WAN-Port als LAN), `AP:2G:0`, `AP:5G:0`. Nach den Fixes #33/#34 live bestätigt: Gerät am WAN-Port mit Port-Daten/EEE, `online_monitor.rates.sync` = synchronisierte DSL-Rate (DSL `GetInfo` CurrRate), `rates.attainable` = `Layer1*MaxBitRate`.
 - Per Browser-Mitschnitt an Box A belegt (Stufe 6): `GET eth_ports`, `PUT eth_ports/eth/<UID>` (Body **nicht** mitgeschnitten), `eee_mode` 0 = Automatisch / 2 = Aus, `GET vpn` (Schlüssel im Klartext → zentrale Schwärzung), `GET plc`.
 
 ### Unbelegte Annahmen
@@ -37,10 +37,9 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 ### Nächste Schritte (Reihenfolge)
 
 1. **🟡-Punkte aus COMPATIBILITY nachtesten** (Korrekturen aus dem Lesetest sind eingebaut, Details unter „Live-Lesetest Stufen 4–7“/„8–10“):
-   - `mesh_overview`/`device_connection_quality`: WLAN-Signal an Box B (an Box A erledigt 16.11.); nach Fix [#33](https://github.com/tomwellnitz/fritzos8-mcp/pull/33) an Box A: Gerät am WAN-Port mit Port-Daten/EEE, `network_doctor` erkennt Pi + EEE dort
+   - `mesh_overview`/`device_connection_quality`: WLAN-Signal an Box B (an Box A erledigt 16.11., ebenso Gerät am WAN-Port mit Port-Daten/EEE nach Fix [#33](https://github.com/tomwellnitz/fritzos8-mcp/pull/33); Pi + EEE am WAN-Port nur per Regressionstest geprüft, live nicht – EEE dort bewusst aus)
    - `isp_report`: Bericht nach ≥ 1 h Collector (beide Boxen); `insufficient_data` bei 1 Messpunkt an Box A erledigt
    - `devices_cleanup_report`/`_plan`: an Box A erledigt für den Report (16.11.: VPN-Peer und Powerline nicht vorgeschlagen, `vpn_list_checked: true`); offen: `_plan` sowie Box B – keine Hersteller-MAC-Geräte ohne Alter unter `delete_candidates`, IP-Duplikate nur `info` (Box B)
-   - `online_monitor` nach Fix [#34](https://github.com/tomwellnitz/fritzos8-mcp/pull/34) an Box A: `rates.sync` = synchronisierte Rate aus `line_diagnostics` (`down_kbps`/`up_kbps`), `rates.attainable` = erreichbare Rate
    - Sitzungsablauf: `smarthome_list_devices`/`smarthome_overview` nach > 20 min Leerlauf ohne Fehler (Box B)
    - Box-Grenzen, kein Nachtest nötig: `line_diagnostics` an Kabel (`unknown`), `devices_change_counter` = 0 an Box A
 2. **Schreib-/critical-Tools ab Stufe 4** einzeln nach Freigabe (Listen je Stufe unten), zuerst `set_lan_eee` und `set_wlan_channel` hin/zurück, Elicitation-Ablehnung bei einem harmlosen critical-Ablauf.

@@ -30,12 +30,12 @@ Welche Modelle und FRITZ!OS-Versionen mit welchem Ergebnis geprüft wurden. „l
 | `devices_change_counter` | 🟡 Box liefert dauerhaft 0 → „kein Zähler“ | – |
 | `security_check`, `fritz_export`, `history_collect`, `network_optimizer_suggest`, `call_barring_list` | ✅ | ✅ |
 | `smarthome_overview` (REST) | – (keine Smart-Home-Geräte) | ✅ Thermostat, Standort geschwärzt |
-| `mesh_overview`, `device_connection_quality` (WLAN-Signal) | ✅ nachgetestet (16.11.): alle WLAN-Geräte mit gemessenem dBm aus der Mesh-Liste, keines ohne Signal. 🟡 Gerät am als LAN genutzten WAN-Port (`WAN:1`) ohne Port-Daten/EEE → Fix [#33](https://github.com/tomwellnitz/fritzos8-mcp/pull/33), nachtesten | 🟡 wie 7583 |
+| `mesh_overview`, `device_connection_quality` (WLAN-Signal) | ✅ nachgetestet (16.11.): alle WLAN-Geräte mit gemessenem dBm aus der Mesh-Liste, keines ohne Signal. Gerät am als LAN genutzten WAN-Port (`WAN:1`) jetzt mit Port-Daten/EEE (Fix [#33](https://github.com/tomwellnitz/fritzos8-mcp/pull/33), live ✅ 16.11.) | 🟡 wie 7583 |
 | `test_my_device` (`box_view.wlan_connection.service`) | ✅ nachgetestet (16.11.): Dienst = `quality.tr064.service` (5 GHz) | – |
 | `isp_report` | 🟡 mit 1 Messpunkt jetzt `insufficient_data` (✅ 16.11.); Bericht nach ≥ 1 h Messreihe noch nachtesten | 🟡 wie 7583 |
 | `devices_cleanup_report`/`_plan` | ✅ Report nachgetestet (16.11.): VPN-Peer und Powerline nicht mehr vorgeschlagen, „zuletzt online“ = `lastused`; `_plan` nicht live geprüft | ❌→🟡 98 Geräte: „gleiche IP“ als Duplikat-Löschgrund für echte Geräte mit Hersteller-MAC, „K--chen“-Umbenennung, Hersteller „China“ → Regeln verschärft, nachtesten |
 | `myfritz_status` (`mcp_benutzer_internet`) | ✅ nachgetestet (16.11.): Text und Felder konsistent | – |
-| `online_monitor` | ✅ `mode_note` (G.fast statt „VDSL“) und 64-bit-Volumen über IGD (16.11.). 🟡 `rates.sync` zeigte die erreichbare statt der synchronisierten Rate (`Layer1*MaxBitRate`, Upload 214 statt 120 Mbit/s) → Fix [#34](https://github.com/tomwellnitz/fritzos8-mcp/pull/34), nachtesten | – |
+| `online_monitor` | ✅ `mode_note` (G.fast statt „VDSL“) und 64-bit-Volumen über IGD (16.11.). `rates.sync` = synchronisierte DSL-Rate, `rates.attainable` = erreichbare Rate (Fix [#34](https://github.com/tomwellnitz/fritzos8-mcp/pull/34), live ✅ 16.11.: = `line_diagnostics`) | – |
 | `vpn_connections` | ✅ nachgetestet (16.11.): Fehler einer verbundenen Verbindung nur als `last_error` (historisch), keine Schlüssel in der Ausgabe | – |
 | Sitzungsablauf (`/api/v0`, AHA) | – | 🟡 `/api/v0` antwortete HTTP 400 statt 401 → Re-Login (REST + AHA), nachtesten |
 | Schreib-/critical-Tools ab Stufe 4 | – | – |
