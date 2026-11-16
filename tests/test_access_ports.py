@@ -20,7 +20,7 @@ from fritzos8_mcp.security import Gate, PlanStore
 from fritzos8_mcp.service import FritzService
 from fritzos8_mcp.tr064 import Tr064Client
 
-from .conftest import PASSWORD, FakeFC
+from .conftest import PASSWORD, FakeBox, FakeFC
 
 BOX = "192.0.2.1"
 SERVER = "192.0.2.50"
@@ -427,3 +427,61 @@ def test_delete_not_verified_when_still_there(landevices: LanDeviceClient) -> No
 def test_port_forward_output_has_no_secrets(landevices: LanDeviceClient) -> None:
     svc, _ = service(landevices, Box())
     assert PASSWORD not in json.dumps(svc.list_port_forwards())
+
+
+# ------------------------------------------------------------------ live: the box pins the target's IP
+
+
+def _pinning_box(fake_box: FakeBox) -> Box:
+    """Live (7583/8.26): AddPortMapping sets 'always same IP' on the target device, DeletePortMapping keeps it."""
+    fake_box.devices.append(
+        {"UID": "landevice9005", "name": "mac-mini", "mac": "AA:BB:CC:DD:EE:05", "ip": SERVER, "static_dhcp": "0"}
+    )
+    box = Box()
+    plain_add = box._add
+
+    def add(**kw: Any) -> dict[str, Any]:
+        for d in fake_box.devices:
+            if d.get("ip") == kw.get("NewInternalClient"):
+                d["static_dhcp"] = "1"
+        return plain_add(**kw)
+
+    box._add = add  # type: ignore[method-assign]
+    return box
+
+
+def _static(fake_box: FakeBox) -> str:
+    return next(str(d["static_dhcp"]) for d in fake_box.devices if d.get("UID") == "landevice9005")
+
+
+def test_port_forward_undoes_static_ip_set_by_box(
+    landevices: LanDeviceClient, fake_box: FakeBox, tmp_path: Any
+) -> None:
+    # Regression (live 7583/8.26): the target kept a fixed IP after the forward was deleted
+    svc, _ = service(landevices, _pinning_box(fake_box))
+    svc._state_root = tmp_path
+    plan = svc.add_port_forward_plan(**ADD, mac="AA:BB:CC:DD:EE:05")
+    assert any("feste IPv4" in w for w in plan["warnings"])
+    r = svc.add_port_forward_execute(plan["token"], **ADD, mac="AA:BB:CC:DD:EE:05")
+    assert r["static_ip"]["set_by_box"] is True and _static(fake_box) == "1"
+    dplan = svc.delete_port_forward_plan("TCP", 2222)
+    assert "feste IP" in dplan["consequence"]
+    d = svc.delete_port_forward_execute(dplan["token"], "TCP", 2222)
+    assert d["static_ip_restored"]["verified"] is True and _static(fake_box) == "0"
+    assert not list(tmp_path.rglob("port_forward_static_ip.json"))
+
+
+def test_port_forward_keeps_static_ip_set_by_user(
+    landevices: LanDeviceClient, fake_box: FakeBox, tmp_path: Any
+) -> None:
+    box = _pinning_box(fake_box)
+    fake_box.devices[-1]["static_dhcp"] = "1"  # pinned before – the user's choice
+    svc, _ = service(landevices, box)
+    svc._state_root = tmp_path
+    plan = svc.add_port_forward_plan(**ADD, mac="AA:BB:CC:DD:EE:05")
+    assert not any("feste IPv4" in w for w in plan["warnings"])
+    r = svc.add_port_forward_execute(plan["token"], **ADD, mac="AA:BB:CC:DD:EE:05")
+    assert "static_ip" not in r
+    dplan = svc.delete_port_forward_plan("TCP", 2222)
+    d = svc.delete_port_forward_execute(dplan["token"], "TCP", 2222)
+    assert "static_ip_restored" not in d and _static(fake_box) == "1"
