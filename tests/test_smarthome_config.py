@@ -291,3 +291,14 @@ def test_pairing_never_outputs_codes(cfg: tuple[Any, ConfigFake]) -> None:
     fake.bases[0]["resetCode"] = "9999"
     out = json.dumps(sh.pairing_status(None))
     assert "ABCD-1234" not in out and "9999" not in out
+
+
+def test_holidays_require_temperature_when_box_has_none(cfg: tuple[Any, ConfigFake]) -> None:
+    # Regression (live 6660/8.25): without a stored holiday temperature the box answered HTTP 400 (code 1009)
+    sh, fake = cfg
+    fake.units["unit-thermo"]["interfaces"]["thermostatInterface"]["holidayPeriods"] = {"periods": []}
+    with pytest.raises(InvalidParameterError, match="temperature_c"):
+        sh.holidays_plan("unit-thermo", [Period(start="01.06.", end="02.06.")], None)
+    assert sh.holidays_plan("unit-thermo", [Period(start="01.06.", end="02.06.")], 16)["token"]
+    assert sh.holidays_plan("unit-thermo", [], None)["token"]  # clearing needs no temperature
+    assert fake.writes == []

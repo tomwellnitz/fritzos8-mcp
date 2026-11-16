@@ -211,6 +211,18 @@ class SmartHomeConfig(SmartHomeControl):
         unit = self._thermostat(uid)
         body = holiday_body(periods, temperature_c)
         before = summarize_thermostat_config(unit)
+        if (
+            body["periods"]
+            and temperature_c is None
+            and not isinstance(before["holiday"]["temperature_c"], int | float)
+        ):
+            # live (6660/8.25): without a stored holiday temperature the box answers HTTP 400
+            # "[MISSING] please provide a valid temperature for holidayPeriods" (code 1009)
+            raise InvalidParameterError(
+                "temperature_c angeben: Für dieses Thermostat ist noch keine Urlaubstemperatur gespeichert – "
+                "die Box lehnt Urlaubszeiträume ohne Temperatur ab.",
+                hint="z. B. temperature_c=16 (8–28 °C in 0,5er-Schritten).",
+            )
         params = {"uid": unit.get("UID") or uid, "holidayPeriods": body}
         token = self.plans.issue("smarthome_holidays", params)
         new = [f"{minutes_to_date(p['startTime'])} – {minutes_to_date(p['endTime'])}" for p in body["periods"]]
