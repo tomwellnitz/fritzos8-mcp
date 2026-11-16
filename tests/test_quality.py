@@ -169,6 +169,12 @@ def test_lan_port_label() -> None:
     )
 
 
+def test_lan_port_label_accepts_wan_port_used_as_lan() -> None:
+    # Regression (live 7583/8.26): device on the WAN port used as LAN was "unbekannt" without port data
+    assert lan_port_label("WAN:1") == "WAN:1" and lan_port_label("wan 1") == "WAN:1"
+    assert lan_port_label("AP:5G:0") is None and lan_port_label("") is None
+
+
 def test_mesh_clients_extracts_port_band_and_signal() -> None:
     clients = {c["name"]: c for c in mesh_clients(MESH_Q)}
     assert clients["TV"]["band_ghz"] == "2.4" and clients["TV"]["signal_dbm"] == -79.0

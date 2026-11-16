@@ -66,8 +66,13 @@ def band_of_interface(name: Any, channel: Any) -> str | None:
 
 
 def lan_port_label(name: Any) -> str | None:
-    m = re.match(r"^\s*LAN\s*:?\s*(\d+)\s*$", str(name or ""), re.I)
-    return f"LAN:{m.group(1)}" if m else None
+    """Mesh-Interface-Name → Port-Label wie in eth_ports ("LAN:1", "WAN:1").
+
+    Live (7583/8.26): ein Gerät am als LAN genutzten WAN-Port hängt laut Mesh-Liste an "WAN:1";
+    eth_ports führt den Port ebenfalls als "WAN:1". Ohne diese Zuordnung fehlten Port-Daten/EEE.
+    """
+    m = re.match(r"^\s*(LAN|WAN)\s*:?\s*(\d+)\s*$", str(name or ""), re.I)
+    return f"{m.group(1).upper()}:{m.group(2)}" if m else None
 
 
 # ------------------------------------------------------------------ mesh → per-client links
