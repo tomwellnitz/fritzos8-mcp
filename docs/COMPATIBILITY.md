@@ -38,7 +38,14 @@ Welche Modelle und FRITZ!OS-Versionen mit welchem Ergebnis geprüft wurden. „l
 | `online_monitor` | ✅ `mode_note` (G.fast statt „VDSL“) und 64-bit-Volumen über IGD (16.11.). `rates.sync` = synchronisierte DSL-Rate, `rates.attainable` = erreichbare Rate (Fix [#34](https://github.com/tomwellnitz/fritzos8-mcp/pull/34), live ✅ 16.11.: = `line_diagnostics`) | – |
 | `vpn_connections` | ✅ nachgetestet (16.11.): Fehler einer verbundenen Verbindung nur als `last_error` (historisch), keine Schlüssel in der Ausgabe | – |
 | Sitzungsablauf (`/api/v0`, AHA) | – | 🟡 `/api/v0` antwortete HTTP 400 statt 401 → Re-Login (REST + AHA), nachtesten |
-| Schreib-/critical-Tools ab Stufe 4 | – | – |
+| Kindersicherung: `set_parental_profile` | ✅ schreibend (16.11., Web-UI gegengeprüft). Box meldet Standard-Geräte mit der Gast-ID `filtprof2`, Gast-Profil für Heimnetz-Geräte abgelehnt → Fix [#40](https://github.com/tomwellnitz/fritzos8-mcp/pull/40) | – |
+| `parental_ticket_create`, `call_barring_add`/`_remove`, `set_alarm_clock`, `set_nas_protocol` (FTP) | ✅ schreibend hin/zurück (16.11.) | – |
+| `devices_cleanup_plan`/`_execute` (Umbenennen) | ✅ schreibend hin/zurück (16.11.) | – |
+| `smarthome_thermostat_mode` (Boost) | – | ✅ schreibend hin/zurück (16.11.), `endTime` in Unix-Sekunden |
+| `guest_wifi_session_start`/`_stop`, `set_guest_wifi` | – | ✅ schreibend (16.11.); Sitzung auf schon eingeschaltetem Gast-WLAN hätte es am Ende abgeschaltet → Fix [#39](https://github.com/tomwellnitz/fritzos8-mcp/pull/39) |
+| `set_wlan_channel` | – | 🟡 Autokanal an/aus ✅; fester Kanal **nicht** übernommen, Box schaltete nur den Autokanal ab → Teiländerung wird jetzt erkannt und zurückgestellt (Fix [#38](https://github.com/tomwellnitz/fritzos8-mcp/pull/38)); Ursache offen |
+| `set_lan_eee` | – (bewusst nicht: Pi am Port) | ✅ schreibend hin/zurück (16.11.), Body nur `eee_mode`; wirkt hier **pro Port** (7583: box-weit) |
+| weitere Schreib-/critical-Tools ab Stufe 4 | – | – |
 
 Offene Prüfpunkte je Stufe: `ROADMAP.md` im Repository („Live-Prüfpunkte“).
 
