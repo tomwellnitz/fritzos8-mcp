@@ -43,7 +43,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
    - `devices_cleanup_report`/`_plan`: an Box A erledigt für den Report (16.11.: VPN-Peer und Powerline nicht vorgeschlagen, `vpn_list_checked: true`); offen: `_plan` sowie Box B – keine Hersteller-MAC-Geräte ohne Alter unter `delete_candidates`, IP-Duplikate nur `info` (Box B)
    - Sitzungsablauf: `smarthome_list_devices`/`smarthome_overview` nach > 20 min Leerlauf ohne Fehler (Box B)
    - Box-Grenzen, kein Nachtest nötig: `line_diagnostics` an Kabel (`unknown`), `devices_change_counter` = 0 an Box A
-2. **Restliche Schreibtests** einzeln nach Freigabe: fester WLAN-Kanal (Ursache klären), `wake_on_lan`, Weckruf/AB-Nachricht markieren (V-9), Fenster-offen am Thermostat, `fritz_apply_*`, Routen/Pinholes (10.6a). Thermostat-Urlaub hat kein Schreib-Tool (Lücke). **Critical** braucht `FRITZ_ALLOW_CRITICAL=1`: Elicitation-Ablehnung, TR-064-Antwort bei 2FA, Portfreigaben, WLAN-Band, Tickets verwerfen.
+2. **Restliche Schreibtests** einzeln nach Freigabe: fester WLAN-Kanal (Ursache klären), `wake_on_lan`, Weckruf/AB-Nachricht markieren (V-9), Fenster-offen am Thermostat, `fritz_apply_*`, Routen/Pinholes (10.6a). Thermostat-Urlaub und Sommerzeit über `smarthome_holidays_*`/`smarthome_summer_period_*` (critical). **Critical** braucht `FRITZ_ALLOW_CRITICAL=1`: Elicitation-Ablehnung, TR-064-Antwort bei 2FA, Portfreigaben, WLAN-Band, Tickets verwerfen.
 3. **Langzeit-Messreihe:** `fritzos8-collector` ≥ 24 h an beiden Boxen, danach `isp_report` (8.2) und `history_anomalies` (10.1).
 4. **Browser-Mitschnitt** für 7.2/7.3 (DNS/DNSv6, Portfreigaben über die Web-UI) – Checkliste unter Stufe 7; erst danach bauen.
 
