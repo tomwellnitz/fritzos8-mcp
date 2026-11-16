@@ -8,13 +8,13 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 
 | Stufe | Inhalt | Stand |
 |---|---|---|
-| 1 | Geräte & Netz | live lesend an beiden Boxen; Schreiben an Box A live: `rename_host` (hin/zurück), `set_static_ip` (unverändert, aufheben, festlegen), `delete_host` (16.11.); critical-Tools ausstehend |
+| 1 | Geräte & Netz | live lesend an beiden Boxen; Schreiben an Box A live: `rename_host` (hin/zurück), `set_static_ip` (unverändert, aufheben, festlegen), `delete_host` (16.11.); Portfreigabe an/aus (critical) live; Neustart/Reconnect bewusst nicht |
 | 2 | WLAN/Gast, Smart Home (AHA), Diagnose/Security-Check | live lesend an beiden Boxen |
 | 3 | Telefonie, Kindersicherung, Portfreigaben, DNS lesen | live an Box A inkl. Schreiben (Internetsperre, AB an/aus), lesend an Box B; DNS schreiben bewusst nicht gebaut |
-| 4–7 | Aufräum-Assistent, Schnappschüsse, Mehrbox, Netz-Doktor; NAS & Fernzugang; LAN-Ports/VPN/Powerline/Qualität; Box-Schutz, WLAN-Einstellungen, Profile, Elicitation, `outputSchema` | live lesend an beiden Boxen („Live-Lesetest Stufen 4–7“), Korrekturen eingearbeitet und 🟡 nachzutesten; schreibend live (16.11.): Aufräum-Assistent (Umbenennen), `set_nas_protocol`, Kindersicherung (Profil, Ticket) an Box A, `set_lan_eee`, `set_wlan_channel` (nur Autokanal) an Box B; critical-Tools ausstehend; 7.2/7.3 nicht gebaut |
+| 4–7 | Aufräum-Assistent, Schnappschüsse, Mehrbox, Netz-Doktor; NAS & Fernzugang; LAN-Ports/VPN/Powerline/Qualität; Box-Schutz, WLAN-Einstellungen, Profile, Elicitation, `outputSchema` | live lesend an beiden Boxen („Live-Lesetest Stufen 4–7“), Korrekturen eingearbeitet und 🟡 nachzutesten; schreibend live (16.11.): Aufräum-Assistent (Umbenennen), `set_nas_protocol`, Kindersicherung (Profil, Ticket) an Box A, `set_lan_eee`, `set_wlan_channel` an Box B; critical live: Tickets verwerfen, FTP aus dem Internet; Fernzugriff und WLAN-Band bewusst nicht; 7.2/7.3 nicht gebaut |
 | 8 | Überwachung & Komfort (8.0–8.12) | live lesend an beiden Boxen; schreibend live (16.11.): Rufsperre, Weckruf an Box A, Thermostat (Soll-Temperatur, Boost) und Gast-WLAN-Sitzung an Box B |
 | 9 | Veröffentlichung, Rechte-Tabelle, Abdeckungspflege | Repo öffentlich seit 14.11.2026 (sauberer Initial-Commit), Releases über release-please |
-| 10 | Ökosystem & Intelligenz | live lesend an beiden Boxen |
+| 10 | Ökosystem & Intelligenz | live lesend an beiden Boxen; critical live (16.11.): statische Route, `fritz_apply`, Thermostat-Urlaub/-Sommerzeit/-Umbenennen; IPv6-Pinhole von der Box abgelehnt; Firmware-Update/Anlernen bewusst nicht |
 
 ### Live verifizierte Schnittstellen (Auszug)
 
@@ -24,6 +24,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 - TR-064: `Hosts:1 X_AVM-DE_SetHostNameByMACAddress`, `LANHostConfigManagement:1 GetDNSServer`, Upstream-DNS (`X_AVM_DE_GetDNSServer`), Gast-Isolierung (`NewX_AVM-DE_UserIsolation`), `X_AVM-DE_BuildType`, IGD `WANIPv6Firewall1`.
 - Nachtest an Box A (16.11.2026, lesend): WLAN-Signal in Mesh-Liste (dBm), `test_my_device`-Dienstzuordnung, `myfritz_status`, `vpn_connections`, `online_monitor` (`mode_note`, 64-bit-Volumen über IGD `GetAddonInfos` – V-6 belegt), `isp_report` mit 1 Messpunkt → `insufficient_data`. Mesh-Interface-Namen live: `LAN:n`, `WAN:n` (WAN-Port als LAN), `AP:2G:0`, `AP:5G:0`. Nach den Fixes #33/#34 live bestätigt: Gerät am WAN-Port mit Port-Daten/EEE, `online_monitor.rates.sync` = synchronisierte DSL-Rate (DSL `GetInfo` CurrRate), `rates.attainable` = `Layer1*MaxBitRate`.
 - Schreibtests 16.11.2026 (je hin und zurück, unabhängig zurückgelesen): Box A – Kindersicherungsprofil (mit Web-UI gegengeprüft), Ticket, Rufsperre, Weckruf, FTP, Umbenennen über den Aufräum-Assistenten; Box B – Thermostat-Boost, Gast-WLAN-Sitzung, Autokanal, EEE. Befunde mit Fixes [#38](https://github.com/tomwellnitz/fritzos8-mcp/pull/38), [#39](https://github.com/tomwellnitz/fritzos8-mcp/pull/39), [#40](https://github.com/tomwellnitz/fritzos8-mcp/pull/40).
+- Critical-Tests 16.11.2026 (`confirmed_via: elicitation`, je hin und zurück): Box A – Tickets verwerfen, statische Route (`NewType` Network angenommen, Interface = Standardverbindung), IPv4-Portfreigabe, FTP aus dem Internet, `fritz_apply`; Box B – Tickets verwerfen, Thermostat-Urlaub/-Sommerzeit/-Umbenennen. IPv6-Pinhole abgelehnt (10.6a). Elicitation: Dialog erscheint im Client (auch im Modus ohne Rückfragen); „Nein“ → `declined`, nichts geändert, Token danach ungültig. Befunde mit Fixes [#42](https://github.com/tomwellnitz/fritzos8-mcp/pull/42), [#43](https://github.com/tomwellnitz/fritzos8-mcp/pull/43), [#44](https://github.com/tomwellnitz/fritzos8-mcp/pull/44); Fixes #38–#40 live bestätigt.
 - Per Browser-Mitschnitt an Box A belegt (Stufe 6): `GET eth_ports`, `PUT eth_ports/eth/<UID>` (Body live an Box B belegt: nur `eee_mode` genügt), `eee_mode` 0 = Automatisch / 2 = Aus, `GET vpn` (Schlüssel im Klartext → zentrale Schwärzung), `GET plc`.
 
 ### Unbelegte Annahmen
@@ -32,7 +33,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 - **Stufe 3:** `<New>`-Semantik der AB-Liste (V-9), Felder von `/api/v0/generic/dnscfg` und `/ipv6` für einen Schreibweg, Fehlercode bei nicht erlaubten selbstständigen Portfreigaben.
 - **Stufe 4:** Log-Muster des Netz-Doktors, `BeaconType`-Werte für WPA3, Feldwert Auto-Update, Einheit von `ds_current_bps` (V-22). Belegt (16.11., Box A): „zuletzt online“ kommt als Feld `lastused`; das Alter blieb bei den vorgeschlagenen Einträgen trotzdem leer (`last_seen_days: null`).
 - **Stufe 6:** Green-Mode-Wert (daher kein `set_lan_power_mode`), LAN-Log-Muster, Einheit von PLC-PHY-Raten, Verhalten des Box-Speedtest-Servers.
-- **Stufe 7:** `NightControl`-XML, Einheiten der Filterprofil-Budgets; warum `SetChannel` mit festem Kanal an Box B nicht übernommen wird (nur der Autokanal geht aus); ob ein Gerät im Gastnetz dieselbe Gast-ID meldet wie Standard-Geräte im Heimnetz.
+- **Stufe 7:** `NightControl`-XML, Einheiten der Filterprofil-Budgets; ob ein Gerät im Gastnetz dieselbe Gast-ID meldet wie Standard-Geräte im Heimnetz.
 - **AVM-Doku-Abgleich:** V-7 (`WANIPConn1` ist die IGD-ID, TR-064 = `WANIPConnection1`), V-8 (TR-064-Portfreigabe nur für den eigenen Rechner), V-11 (Einheit Gast-Timeout).
 
 ### Nächste Schritte (Reihenfolge)
@@ -43,7 +44,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
    - `devices_cleanup_report`/`_plan`: an Box A erledigt für den Report (16.11.: VPN-Peer und Powerline nicht vorgeschlagen, `vpn_list_checked: true`); offen: `_plan` sowie Box B – keine Hersteller-MAC-Geräte ohne Alter unter `delete_candidates`, IP-Duplikate nur `info` (Box B)
    - Sitzungsablauf: `smarthome_list_devices`/`smarthome_overview` nach > 20 min Leerlauf ohne Fehler (Box B)
    - Box-Grenzen, kein Nachtest nötig: `line_diagnostics` an Kabel (`unknown`), `devices_change_counter` = 0 an Box A
-2. **Restliche Schreibtests** einzeln nach Freigabe: fester WLAN-Kanal (Ursache klären), `wake_on_lan`, Weckruf/AB-Nachricht markieren (V-9), Fenster-offen am Thermostat, `fritz_apply_*`, Routen/Pinholes (10.6a). Thermostat-Urlaub und Sommerzeit über `smarthome_holidays_*`/`smarthome_summer_period_*` (critical). **Critical** braucht `FRITZ_ALLOW_CRITICAL=1`: Elicitation-Ablehnung, TR-064-Antwort bei 2FA, Portfreigaben, WLAN-Band, Tickets verwerfen.
+2. **Restliche Live-Tests:** TR-064-Antwort bei 2FA, `wake_on_lan` an einem Gerät mit aktivem WoL, AB-Nachricht markieren (V-9, braucht eine Nachricht), Rufumleitung (braucht eine), Box-Speedtest (Server muss in der Web-UI an sein). Bewusst nur mit Tom: Fernzugriff an/aus, WLAN-Band aus, WPS, Anrufe, Neustart/Reconnect/Firmware, Smart-Home anlernen/löschen.
 3. **Langzeit-Messreihe:** `fritzos8-collector` ≥ 24 h an beiden Boxen, danach `isp_report` (8.2) und `history_anomalies` (10.1).
 4. **Browser-Mitschnitt** für 7.2/7.3 (DNS/DNSv6, Portfreigaben über die Web-UI) – Checkliste unter Stufe 7; erst danach bauen.
 
