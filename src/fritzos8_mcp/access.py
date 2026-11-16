@@ -32,6 +32,7 @@ class Host:
     ip: str
     mac: str
     active: bool
+    guest: bool = False  # X_AVM-DE_Guest of the host list: connected via the guest network
 
     def as_dict(self) -> dict[str, Any]:
         return {"name": self.name, "ip": self.ip, "mac": self.mac, "active": self.active}
@@ -65,7 +66,13 @@ class HostResolver:
 
     def hosts(self) -> list[Host]:
         return [
-            Host(str(h.get("name") or ""), str(h.get("ip") or ""), safe_mac(h.get("mac")), bool(h.get("active")))
+            Host(
+                str(h.get("name") or ""),
+                str(h.get("ip") or ""),
+                safe_mac(h.get("mac")),
+                bool(h.get("active")),
+                bool(h.get("guest")),
+            )
             for h in self.tr064.list_hosts()
         ]
 
@@ -89,7 +96,7 @@ class HostResolver:
                 )
             ip_v = ips.pop()
             best = next(h for h in matches if h.ip == ip_v)
-            return Host(best.name, ip_v, wanted, any(h.active for h in matches))
+            return Host(best.name, ip_v, wanted, any(h.active for h in matches), any(h.guest for h in matches))
         ip_v = validate_ipv4(str(ip))
         matches = [h for h in hosts if h.ip == ip_v]
         if not matches:
@@ -100,7 +107,13 @@ class HostResolver:
                 f"IP {ip_v} passt auf mehrere Geräte ({', '.join(sorted(macs))}) – bitte mac angeben."
             )
         h = matches[0]
-        return Host(h.name, ip_v, h.mac or (macs.pop() if macs else ""), any(x.active for x in matches))
+        return Host(
+            h.name,
+            ip_v,
+            h.mac or (macs.pop() if macs else ""),
+            any(x.active for x in matches),
+            any(x.guest for x in matches),
+        )
 
     # ------------------------------------------------------------ protection
 
