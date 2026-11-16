@@ -449,3 +449,30 @@ def test_online_monitor_rates_fallback_without_addon_infos(landevices: LanDevice
     assert rates["sync"] == {"down_mbit_s": 250.0, "up_mbit_s": 40.0}
     assert rates["tariff"] == {"down_mbit_s": None, "up_mbit_s": None}
     assert ("WANCommonInterfaceConfig1", "X_AVM_DE_GetAddonInfos", {}) in fc.calls  # second spelling tried
+
+
+def test_online_monitor_dsl_sync_rate_is_curr_rate_not_layer1(landevices: LanDeviceClient) -> None:
+    """Regression (live 7583/8.26, G.fast): Layer1*MaxBitRate is the attainable DSL rate (upstream 214 vs.
+    120 Mbit/s synchronised) – sync must come from WANDSLInterfaceConfig GetInfo, Layer1 is 'attainable'."""
+    fc = FakeFC(
+        {
+            ("WANCommonInterfaceConfig1", "X_AVM-DE_GetAddonInfos"): FritzActionError("x"),
+            ("WANCommonInterfaceConfig1", "X_AVM_DE_GetAddonInfos"): FritzActionError("x"),
+            ("WANCommonInterfaceConfig1", "GetCommonLinkProperties"): {
+                "NewWANAccessType": "DSL",
+                "NewLayer1DownstreamMaxBitRate": "816810000",
+                "NewLayer1UpstreamMaxBitRate": "213777000",
+            },
+            ("WANDSLInterfaceConfig1", "GetInfo"): {
+                "NewStatus": "Up",
+                "NewDownstreamCurrRate": "812665",
+                "NewUpstreamCurrRate": "119930",
+                "NewDownstreamMaxRate": "816810",
+                "NewUpstreamMaxRate": "213777",
+            },
+        }
+    )
+    rates = make_service(landevices, fc).online_monitor()["rates"]
+    assert rates["sync"] == {"down_mbit_s": 812.66, "up_mbit_s": 119.93}
+    assert rates["attainable"] == {"down_mbit_s": 816.81, "up_mbit_s": 213.78}
+    assert rates["source"].startswith("Sync: WANDSLInterfaceConfig GetInfo")

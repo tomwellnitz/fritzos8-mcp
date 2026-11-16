@@ -499,18 +499,39 @@ class NetInfoClient:
                 "GetCommonLinkProperties ohne Leitungsrate.",
             }
         empty = {"down_mbit_s": None, "up_mbit_s": None}
+        layer1 = {
+            "down_mbit_s": None if not down else round(down / 1_000_000, 2),
+            "up_mbit_s": None if not up else round(up / 1_000_000, 2),
+        }
         out: dict[str, Any] = {
             "available": True,
             "source": "GetCommonLinkProperties (Fallback: X_AVM-DE_GetAddonInfos fehlt auf dieser Box)",
             "wan_access_type": link.get("NewWANAccessType") or None,
-            "sync": {
-                "down_mbit_s": None if not down else round(down / 1_000_000, 2),
-                "up_mbit_s": None if not up else round(up / 1_000_000, 2),
-            },
+            "sync": layer1,
             **{key: dict(empty) for key in ADDON_RATES if key != "sync"},
-            "unit_note": "Layer1*MaxBitRate in bit/s = synchronisierte Leitungsrate; Brutto-/Vertrags-/L2-/manuelle "
-            "Rate liefert nur X_AVM-DE_GetAddonInfos (hier nicht vorhanden).",
+            "unit_note": "Layer1*MaxBitRate in bit/s; Brutto-/Vertrags-/L2-/manuelle Rate liefert nur "
+            "X_AVM-DE_GetAddonInfos (hier nicht vorhanden).",
         }
+        # Live (7583/8.26, G.fast): Layer1*MaxBitRate = the ATTAINABLE rate of the DSL line (= DSL GetInfo
+        # MaxRate), not the synchronised one (upstream 214 vs. 120 Mbit/s, cf. V-12). For DSL the sync rate
+        # therefore comes from WANDSLInterfaceConfig GetInfo (CurrRate, kbit/s); Layer1 is shown as attainable.
+        dsl = self.tr064.try_call("WANDSLInterfaceConfig1", "GetInfo") or {}
+        cur_down, cur_up = _int(dsl.get("NewDownstreamCurrRate")), _int(dsl.get("NewUpstreamCurrRate"))
+        if cur_down or cur_up:
+            out["sync"] = {
+                "down_mbit_s": None if not cur_down else round(cur_down / 1000, 2),
+                "up_mbit_s": None if not cur_up else round(cur_up / 1000, 2),
+            }
+            out["attainable"] = layer1
+            out["source"] = (
+                "Sync: WANDSLInterfaceConfig GetInfo (CurrRate); attainable: GetCommonLinkProperties "
+                "(Fallback: X_AVM-DE_GetAddonInfos fehlt auf dieser Box)"
+            )
+            out["unit_note"] = (
+                "sync = synchronisierte DSL-Rate (CurrRate, kbit/s); attainable = Layer1*MaxBitRate (bit/s), "
+                "bei DSL die erreichbare Rate. Brutto-/Vertrags-/L2-/manuelle Rate liefert nur "
+                "X_AVM-DE_GetAddonInfos (hier nicht vorhanden)."
+            )
         return out
 
     @staticmethod
