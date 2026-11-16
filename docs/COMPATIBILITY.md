@@ -42,10 +42,15 @@ Welche Modelle und FRITZ!OS-Versionen mit welchem Ergebnis geprüft wurden. „l
 | `parental_ticket_create`, `call_barring_add`/`_remove`, `set_alarm_clock`, `set_nas_protocol` (FTP) | ✅ schreibend hin/zurück (16.11.) | – |
 | `devices_cleanup_plan`/`_execute` (Umbenennen) | ✅ schreibend hin/zurück (16.11.) | – |
 | `smarthome_thermostat_mode` (Boost) | – | ✅ schreibend hin/zurück (16.11.), `endTime` in Unix-Sekunden |
-| `guest_wifi_session_start`/`_stop`, `set_guest_wifi` | – | ✅ schreibend (16.11.); Sitzung auf schon eingeschaltetem Gast-WLAN hätte es am Ende abgeschaltet → Fix [#39](https://github.com/tomwellnitz/fritzos8-mcp/pull/39) |
-| `set_wlan_channel` | – | 🟡 Autokanal an/aus ✅; fester Kanal **nicht** übernommen, Box schaltete nur den Autokanal ab → Teiländerung wird jetzt erkannt und zurückgestellt (Fix [#38](https://github.com/tomwellnitz/fritzos8-mcp/pull/38)); Ursache offen |
-| `set_lan_eee` | – (bewusst nicht: Pi am Port) | ✅ schreibend hin/zurück (16.11.), Body nur `eee_mode`; wirkt hier **pro Port** (7583: box-weit) |
-| weitere Schreib-/critical-Tools ab Stufe 4 | – | – |
+| `guest_wifi_session_start`/`_stop`, `set_guest_wifi` | – | ✅ schreibend (16.11.); Sitzung auf schon eingeschaltetem Gast-WLAN hätte es am Ende abgeschaltet → Fix [#39](https://github.com/tomwellnitz/fritzos8-mcp/pull/39), live bestätigt: nach Ablauf bleibt es an, Sitzung beendet |
+| `set_wlan_channel` | – | ✅ fester Kanal und Autokanal hin/zurück (Nachtest 16.11.). Beim ersten Versuch blieb der Kanal stehen und nur der Autokanal ging aus (nicht reproduzierbar) → Teiländerung wird erkannt und zurückgestellt (Fix [#38](https://github.com/tomwellnitz/fritzos8-mcp/pull/38)) |
+| `set_lan_eee` | – (bewusst nicht: Pi am Port) | ✅ schreibend (16.11.), Body nur `eee_mode`; wirkt hier **pro Port** (7583: box-weit). Ein laufender Link bleibt mit EEE ausgehandelt (`eee_active`), auch nach einem Neustart von Home Assistant am Pi; Kabel-Neuverbindung noch nicht geprüft → Hinweis [#44](https://github.com/tomwellnitz/fritzos8-mcp/pull/44) |
+| Critical (16.11., `confirmed_via: elicitation`): Tickets verwerfen, statische Route, IPv4-Portfreigabe, FTP aus dem Internet, `fritz_apply` | ✅ je hin/zurück. Portfreigabe setzt am Ziel dauerhaft eine feste IP → Rückstellung [#42](https://github.com/tomwellnitz/fritzos8-mcp/pull/42) | Tickets verwerfen ✅ |
+| Elicitation-Ablehnung (critical `*_execute`) | – | ✅ „Nein“ im Dialog → `declined`, nichts geändert, Token danach ungültig (16.11.) |
+| `ipv6_pinhole_add` | ❌ von der Box abgelehnt (nicht berechtigt) – keine UPnP-Pinholes per TR-064 in dieser Einstellung | – |
+| Thermostat: `smarthome_holidays`, `smarthome_summer_period`, `smarthome_rename`, Fenster offen | – | ✅ je hin/zurück (16.11.). Urlaub ohne gespeicherte Temperatur → HTTP 400 → Vorabprüfung [#43](https://github.com/tomwellnitz/fritzos8-mcp/pull/43) |
+| `wake_on_lan` | 🟡 Magic Packet gesendet, Zielgerät nicht aufgewacht (Geräteseite unklar) | – |
+| nicht live getestet (bewusst) | Fernzugriff an/aus, WLAN-Band aus, WPS, Anrufe, Neustart/Reconnect/Firmware, Smart-Home anlernen/löschen, `delete_host_force` | – |
 
 Offene Prüfpunkte je Stufe: `ROADMAP.md` im Repository („Live-Prüfpunkte“).
 
