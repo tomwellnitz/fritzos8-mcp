@@ -1,51 +1,52 @@
 # Roadmap
 
-## Projektstand & Live-Prüfung (Stand 14.11.2026)
+## Projektstand & Live-Prüfung (Stand 16.11.2026, abgeglichen mit docs/COMPATIBILITY.md)
 
-Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box 6660 Cable (FRITZ!OS 8.25, DECT-Heizkörperthermostat). Live geprüfte Tools je Modell: [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
+Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box 6660 Cable (FRITZ!OS 8.25, DECT-Heizkörperthermostat). Ergebnis je Tool und Box: [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) – dort mit 🟡 „nachtesten“ markierte Punkte sind die offenen Live-Prüfungen.
 
 ### Stand je Stufe
 
 | Stufe | Inhalt | Stand |
 |---|---|---|
-| 1 | Geräte & Netz | fertig; live offen: `set_static_ip`, `delete_host`, critical-Tools, TR-064-2FA-Antwort |
-| 2 | WLAN/Gast, Smart Home (AHA), Diagnose/Security-Check | gebaut, Live-Test ausstehend |
-| 3 | Telefonie, Kindersicherung, Portfreigaben, DNS lesen | gebaut, Live-Test ausstehend (Teile live geprüft, siehe unten); DNS schreiben bewusst nicht gebaut |
-| 4 | Aufräum-Assistent, Schnappschüsse, Mehrbox, Netz-Doktor, Sicherheits-Score | gebaut, teils live geprüft (Live-Lesetest Stufen 4–7) |
-| 5 | NAS & Fernzugang | gebaut, teils live geprüft |
-| 6 | LAN-Ports/EEE, VPN, Powerline, Speedtest, Verbindungsqualität | gebaut, Live-Test ausstehend (Endpunkte per Browser-Mitschnitt belegt) |
-| 7 | Box-Schutz, WLAN-Einstellungen, Kindersicherung mit Profilen, Elicitation, `outputSchema` | gebaut ohne 7.2/7.3, Live-Test ausstehend |
-| 8 | Überwachung & Komfort (8.0–8.12) | gebaut, Live-Test ausstehend (Lesetest teilweise, siehe „Live-Lesetest Stufen 8–10“) |
+| 1 | Geräte & Netz | live an Box A inkl. Schreiben (Umbenennen hin/zurück), lesend an Box B |
+| 2 | WLAN/Gast, Smart Home (AHA), Diagnose/Security-Check | live lesend an beiden Boxen |
+| 3 | Telefonie, Kindersicherung, Portfreigaben, DNS lesen | live an Box A inkl. Schreiben (Internetsperre, AB an/aus), lesend an Box B; DNS schreiben bewusst nicht gebaut |
+| 4–7 | Aufräum-Assistent, Schnappschüsse, Mehrbox, Netz-Doktor; NAS & Fernzugang; LAN-Ports/VPN/Powerline/Qualität; Box-Schutz, WLAN-Einstellungen, Profile, Elicitation, `outputSchema` | live lesend an beiden Boxen („Live-Lesetest Stufen 4–7“), Korrekturen eingearbeitet und 🟡 nachzutesten; Schreib-/critical-Tools noch nicht live geprüft; 7.2/7.3 nicht gebaut |
+| 8 | Überwachung & Komfort (8.0–8.12) | live lesend an beiden Boxen; an Box B zusätzlich Thermostat-Schreibtest (Soll-Temperatur hin/zurück) |
 | 9 | Veröffentlichung, Rechte-Tabelle, Abdeckungspflege | Repo öffentlich seit 14.11.2026 (sauberer Initial-Commit), Releases über release-please |
-| 10 | Ökosystem & Intelligenz | gebaut, Live-Test ausstehend |
+| 10 | Ökosystem & Intelligenz | live lesend an beiden Boxen |
 
-### Live verifiziert (14.11.2026)
+### Live verifizierte Schnittstellen (Auszug)
 
-- PBKDF2-Login, alle read-Tools der Stufe 1, Denylist (`GetSecurityKeys`/Reboot abgelehnt), `rename_host` mit Rücklesen (hin und zurück).
+- PBKDF2-Login, Denylist (`GetSecurityKeys`/Reboot abgelehnt), Rücklesen nach jedem Schreiben.
 - `/api/v0` an Box A: `GET /api/v0/generic/landevice`; `PUT /api/v0/generic/landevice/landevice/<UID>` mit `{"static_dhcp":"1"}` bzw. `{"friendly_name":"…"}`; `DELETE /api/v0/generic/landevice/landevice/<UID>`.
-- TR-064: `Hosts:1 X_AVM-DE_SetHostNameByMACAddress`, `LANHostConfigManagement:1 GetDNSServer`.
+- TR-064: `Hosts:1 X_AVM-DE_SetHostNameByMACAddress`, `LANHostConfigManagement:1 GetDNSServer`, Upstream-DNS (`X_AVM_DE_GetDNSServer`), Gast-Isolierung (`NewX_AVM-DE_UserIsolation`), `X_AVM-DE_BuildType`, IGD `WANIPv6Firewall1`.
 - Per Browser-Mitschnitt an Box A belegt (Stufe 6): `GET eth_ports`, `PUT eth_ports/eth/<UID>` (Body **nicht** mitgeschnitten), `eee_mode` 0 = Automatisch / 2 = Aus, `GET vpn` (Schlüssel im Klartext → zentrale Schwärzung), `GET plc`.
 
-### Unbelegte Annahmen (bis zum Live-Test)
+### Unbelegte Annahmen
 
-- **Stufe 2:** `X_AVM-DE_GetWLANExtInfo`/`APType` für die Gast-Erkennung, Band-Feld `FrequencyBand`, Feldnamen von `X_AVM-DE_GetWPSInfo`, `UserInterface:X_AVM-DE_GetInfo`, ob Web-UI-Portfreigaben im WAN-Portmapping erscheinen, AHA-Antworten.
-- **Stufe 3:** `<New>`-Semantik der AB-Liste (V-9), Feldwerte `NewDisallow`/`NewWANAccess`, Upstream-DNS-Actions, Felder von `/api/v0/generic/dnscfg` und `/ipv6`, Fehlercode bei nicht erlaubten selbstständigen Portfreigaben.
-- **Stufe 4:** Log-Muster des Netz-Doktors, `BeaconType`-Werte für WPA3, Feldwerte für Gast-Isolierung/Auto-Update, Mesh-JSON-Felder und -Einheiten, Einheit von `ds_current_bps`, DDNS-Feldnamen, „zuletzt online“-Feld der landevice-Antwort.
-- **Stufe 6:** Green-Mode-Wert (daher kein `set_lan_power_mode`), LAN-Log-Muster, Mesh-Interface-Namen `LAN:n`, Einheit von `SignalStrength` und PLC-PHY-Raten, Verhalten des Box-Speedtest-Servers.
+- **Stufe 2:** Feldnamen von `X_AVM-DE_GetWPSInfo`, ob Web-UI-Portfreigaben im WAN-Portmapping erscheinen.
+- **Stufe 3:** `<New>`-Semantik der AB-Liste (V-9), Felder von `/api/v0/generic/dnscfg` und `/ipv6` für einen Schreibweg, Fehlercode bei nicht erlaubten selbstständigen Portfreigaben.
+- **Stufe 4:** Log-Muster des Netz-Doktors, `BeaconType`-Werte für WPA3, Feldwert Auto-Update, Einheit von `ds_current_bps` (V-22), „zuletzt online“-Feld der landevice-Antwort.
+- **Stufe 6:** Green-Mode-Wert (daher kein `set_lan_power_mode`), Body von `PUT eth_ports`, LAN-Log-Muster, Mesh-Interface-Namen `LAN:n`, Einheit von PLC-PHY-Raten, Verhalten des Box-Speedtest-Servers.
 - **Stufe 7:** Argumentname für den Autokanal, `NightControl`-XML, Hüllelement und Einheiten der Filterprofile.
-- **AVM-Doku-Abgleich:** V-6 (64-bit-Zähler nur in IGD), V-7 (`WANIPConn1` ist die IGD-ID, TR-064 = `WANIPConnection1`), V-8 (TR-064-Portfreigabe nur für den eigenen Rechner).
+- **AVM-Doku-Abgleich:** V-6 (64-bit-Zähler nur in IGD), V-7 (`WANIPConn1` ist die IGD-ID, TR-064 = `WANIPConnection1`), V-8 (TR-064-Portfreigabe nur für den eigenen Rechner), V-11 (Einheit Gast-Timeout).
 
 ### Nächste Schritte (Reihenfolge)
 
-1. Stufe 1 live abschließen: `set_static_ip` an einem Gerät, das schon fest ist (muss „unchanged“ melden), `delete_host` an einem echten Altgerät nach Freigabe.
-2. Offene Sicherheitsannahmen verifizieren: Denylist für Credential-liefernde TR-064-Actions, TR-064-Antwort bei 2FA (Codes 866/867/868), Reconnect-Nachweis.
-3. Stufe 2 live prüfen: erst read-Tools, dann `set_guest_wifi` hin und zurück nach Freigabe.
-4. Stufe 3 live prüfen (Liste in Stufe 3); DNS/DNSv6-Schreibweg per Browser-Mitschnitt belegen, erst dann bauen.
-5. Stufe 4 live prüfen (Liste „Live zu prüfen (Stufe 4)“).
-6. Stufe 6 live prüfen: zuerst `vpn_connections` auf Schlüsselreste, dann `set_lan_eee` hin und zurück nach Freigabe.
-7. Stufe 7 live prüfen: zuerst Box-Schutz an Box B, dann Schema-Warnungen im Log, Elicitation-Ablehnung; Mitschnitt-Session für 7.2/7.3.
-8. Stufe 8 live prüfen: erst alle read-Tools an beiden Boxen, dann Schreiben einzeln nach Freigabe.
-9. Stufe 10 live prüfen (Liste „Live-Prüfpunkte (Stufe 10)“).
+1. **🟡-Punkte aus COMPATIBILITY nachtesten** (Korrekturen aus dem Lesetest sind eingebaut, Details unter „Live-Lesetest Stufen 4–7“/„8–10“):
+   - `mesh_overview`/`device_connection_quality`: WLAN-Signal (Anteil „unbekannt“ ≈ 0, `signal_source`) an beiden Boxen
+   - `test_my_device`: `box_view.wlan_connection.service` = `quality.tr064.service` (Box A)
+   - `isp_report`: `insufficient_data` bei wenigen Messpunkten, Bericht nach ≥ 1 h Collector (beide Boxen)
+   - `devices_cleanup_report`/`_plan`: VPN-Peer und Powerline nicht mehr vorgeschlagen (Box A), keine Hersteller-MAC-Geräte ohne Alter unter `delete_candidates`, IP-Duplikate nur `info` (Box B)
+   - `myfritz_status`: Text konsistent mit `remote_access.enabled` (Box A)
+   - `online_monitor`: `rates.sync` ≈ `line_diagnostics`, `mode_note` (Box A)
+   - `vpn_connections`: `last_error` bei verbundener Verbindung (Box A)
+   - Sitzungsablauf: `smarthome_list_devices`/`smarthome_overview` nach > 20 min Leerlauf ohne Fehler (Box B)
+   - Box-Grenzen, kein Nachtest nötig: `line_diagnostics` an Kabel (`unknown`), `devices_change_counter` = 0 an Box A
+2. **Schreib-/critical-Tools ab Stufe 4** einzeln nach Freigabe (Listen je Stufe unten), zuerst `set_lan_eee` und `set_wlan_channel` hin/zurück, Elicitation-Ablehnung bei einem harmlosen critical-Ablauf.
+3. **Langzeit-Messreihe:** `fritzos8-collector` ≥ 24 h an beiden Boxen, danach `isp_report` (8.2) und `history_anomalies` (10.1).
+4. **Browser-Mitschnitt** für 7.2/7.3 (DNS/DNSv6, Portfreigaben über die Web-UI) – Checkliste unter Stufe 7; erst danach bauen.
 
 ## Stufe 1 – Geräte & Netz (v0.1, erledigt)
 
@@ -54,7 +55,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 - TR-064 generisch (lesend): `tr064_list_services`, `tr064_describe_action`, `tr064_call`
 - Kuratiert: `system_info`, `wan_status`, `list_hosts`, `list_landevices`, `rename_host`, `set_static_ip`, `delete_host`, `get_lan_dns`, `reboot_*`, `reconnect_wan_*`
 
-## Stufe 2 – WLAN, Smart Home, Diagnose (erledigt, Live-Test ausstehend)
+## Stufe 2 – WLAN, Smart Home, Diagnose (erledigt, live lesend geprüft)
 
 - **WLAN/Gast:** `wlan_status`, `guest_wifi_status` (read), `set_guest_wifi` (write, Rücklesen), `set_wlan_enabled_plan/_execute` (critical, Aussperr-Gefahr) – alles TR-064 `WLANConfiguration1..n`, keine Schlüssel
 - **Smart Home** über das dokumentierte AHA-HTTP-Interface: `smarthome_list_devices`, `smarthome_device_stats` (read), `smarthome_set_switch`, `smarthome_set_thermostat` (write, Rücklesen)
@@ -68,7 +69,7 @@ Verschoben (nicht Teil von Stufe 2):
 - TR-064-Allowlist für ausgewählte schreibende Actions im generischen Caller
 - `X_AVM-DE_Auth`-Ablauf (2FA anstoßen und Status abfragen) statt nur Erkennen
 
-## Stufe 3 – Telefonie, Kindersicherung, Portfreigaben, DNS (gebaut, Live-Test ausstehend)
+## Stufe 3 – Telefonie, Kindersicherung, Portfreigaben, DNS (gebaut, live geprüft inkl. Schreiben an Box A)
 
 - **Telefonie** (TR-064 `X_AVM-DE_OnTel1`, `X_AVM-DE_TAM1`; Parser nach the78mole/fritzmoles-mcp, MIT): `call_list` (Tage/Anzahl/Typfilter), `tam_list` (aktiv, Nachrichten gesamt/neu), `phonebook_list` (Namen, optional Anzahl) – read; `set_tam_enabled` – write mit Rücklesen
 - **Kindersicherung** (TR-064 `X_AVM-DE_HostFilter1`): `internet_access_status` – read; `set_internet_access` – write, MAC→IP über die Hostliste, Rücklesen, Schutz für Box und Server-Rechner
@@ -89,7 +90,7 @@ Bewusst nicht gebaut / offen:
 - Zugangsprofile/Zeitbudgets, Ticket-Funktionen (`X_AVM-DE_HostFilter` `MarkTicket`, `DiscardAllTickets`) und `/api/v0`-landevice-Felder zur Kindersicherung (nicht belegt)
 - IPv6-Portfreigaben (Pinholes, `X_AVM-DE_WANIPv6FirewallControl`/Web-UI)
 
-## Stufe 4 – Komfort, Überblick, Mehrbox (gebaut, Live-Test ausstehend)
+## Stufe 4 – Komfort, Überblick, Mehrbox (gebaut, live lesend geprüft – Schreiben ausstehend)
 
 1. **Aufräum-Assistent:** `devices_cleanup_report` (read), `devices_cleanup_plan`/`_execute` (write, Token, Rücklesen je Aktion). Hersteller aus der IEEE-OUI-Registry (Laufzeit-Download, 30-Tage-Cache, keine eingebetteten Daten).
 
@@ -148,7 +149,7 @@ Nur dokumentiert, nicht gebaut.
 - Lizenz/NOTICE prüfen, `SECURITY.md`, `CONTRIBUTING.md`.
 - Kompatibilitätsmatrix (Modelle × FRITZ!OS-Versionen, je Tool live geprüft ja/nein).
 
-## Stufe 5 – NAS & Fernzugang (gebaut, Live-Test ausstehend)
+## Stufe 5 – NAS & Fernzugang (gebaut, live lesend geprüft – Schreiben ausstehend)
 
 Grundlage: offizielle AVM/FRITZ!-TR-064-Dokumente (Storage, Filelinks, WebDAV, Media, MyFRITZ, Remote Access, USP Controller, App Setup; Stand 2025-08).
 
@@ -172,7 +173,7 @@ Bewusst nicht gebaut / offen:
 - `RemoteAccess:SetConfig` (Internet-Benutzer anlegen), `SetDDNSConfig`, `Storage:SetUserConfig`, `WebDAVClient:SetConfig`, `MyFritz:SetMyFritz` (E-Mail) – verlangen Passwörter/Kontodaten, daher nicht gebaut. Freigabe-Links anlegen/löschen (`NewFilelinkEntry`/`DeleteFilelinkEntry`), `SetLetsEncryptEnable`, `SetUSPMyFRITZEnable`, MyFRITZ!-Dienste ändern – möglich, aber noch nicht gebaut.
 - `SetDVBCEnable` – nicht gebaut (die Box startet dabei neu).
 
-## Stufe 6 – LAN-Ports, VPN, Powerline, Verbindungsqualität (gebaut, Live-Test ausstehend)
+## Stufe 6 – LAN-Ports, VPN, Powerline, Verbindungsqualität (gebaut, live lesend geprüft – Schreiben ausstehend)
 
 Anlass: Live-Vorfall – Raspberry Pi 5 (HAOS, Kernel 6.18) mit EEE an einem FRITZ!Box-Port → Link-Flapping alle ~10 s, 25–45 % Paketverlust, DNS (Pi ist DNS-Server) sporadisch weg (raspberrypi/linux#7511, home-assistant/operating-system#4861). Der Netz-Doktor hatte das nicht erkannt.
 
@@ -198,7 +199,7 @@ Bewusst nicht gebaut / offen:
 - `forwardrules`/`ipv6firewall` kuratiert und in `security_check`: erst nach Live-Befund der Struktur.
 - Weitere vorhandene, ungeprüfte `/api/v0`-Endpunkte: `generic/trafficprio`, `generic/connections`, `generic/nexus`, `generic/wlan_light`, `generic/box`, `generic/user`, `generic/providerlist`, `dino/configflags`, `dino/misc/boxname`.
 
-## Stufe 7 – Robustheit & fehlende Einstellungen (gebaut ohne 7.2/7.3, Live-Test ausstehend)
+## Stufe 7 – Robustheit & fehlende Einstellungen (gebaut ohne 7.2/7.3, live lesend geprüft – Schreiben ausstehend)
 
 1. **7.1 Box schützen** (`guard.py`): je Box Drosselung (2 parallel, 8/s, Burst 4), Kurzzeit-Cache 15 s (Hostliste, `landevice`, Mesh-JSON, `eth_ports`, `vpn`), Cache-Leerung nach jedem Schreibvorgang, Backoff nur für Lesezugriffe, Schutzschalter (3 Verbindungsfehler → 30 s sofort `connection_error`). Umgebungsvariablen `FRITZ_MAX_PARALLEL`, `FRITZ_RATE_LIMIT`, `FRITZ_BURST`, `FRITZ_CACHE_TTL`, `FRITZ_RETRIES`, `FRITZ_BREAKER_THRESHOLD`, `FRITZ_BREAKER_COOLDOWN`; Status in `server_status.box_protection`.
 2. **7.4 WLAN-Einstellungen:** `wlan_settings` (read), `set_wlan_channel` (write) – AVM-Doku „WLANConfiguration“ 2026-03-10.
@@ -240,7 +241,7 @@ Bewusst nicht gebaut / offen:
 - `X_AVM-DE_SetWLANGlobalEnable` (alle WLANs aus) – Aussperr-Gefahr, bewusst nicht gebaut; Band abschalten bleibt `set_wlan_enabled_*`.
 - Profile anlegen/ändern (Budgets, Zeitpläne, Filterlisten): per TR-064 nicht vorgesehen.
 
-## Stufe 8 – Überwachung & Komfort (gebaut 14.11.2026, nur gegen Mocks getestet – Live-Test ausstehend)
+## Stufe 8 – Überwachung & Komfort (gebaut 14.11.2026, live lesend geprüft – Schreiben ausstehend)
 
 Reihenfolge und Abnahme: [docs/PLAN.md](docs/PLAN.md#stufe-8--überwachung--komfort). Alle 14 Pakete gebaut (8.0–8.12); Abdeckung danach: TR-064 lesend 49,8 % kuratiert + 41,8 % generisch, schreibend 17,8 %; AHA 39 % direkt; Smart-Home-REST 11 Endpunkte (nach Stufe 10: lesend 55,2 % + 36,3 %, schreibend 21,3 %, AHA 44 %, REST 8.5 23 Endpunkte) (siehe [COVERAGE](docs/COVERAGE.md)).
 
@@ -293,7 +294,7 @@ Live gefunden und korrigiert (jeweils nach dem Fix an beiden Boxen nachtesten):
 
 Neu danach: **`server_status` → `health`** je Box (ok/degraded/down + Begründung) aus dem Zustand, den Clients/Guard ohnehin kennen (je Schnittstelle letzte erfolgreiche Anfrage, letzter Fehler redigiert, Schutzschalter, Re-Logins, Sitzungsalter), optional `probe=true` (je Schnittstelle eine Leseanfrage über den Guard). Nachtesten: nach einem Lesetest an Box B `health` = ok; Sitzung in der Web-UI abmelden bzw. 20 min warten → nächster Aufruf zeigt `relogins_since_start` +1; `probe=true` an der 7583 (ohne Smart Home) → `smarthome_rest`/`aha` ok oder „nicht vorhanden“, kein Fehler.
 
-## Stufe 10 – Ökosystem & Intelligenz (gebaut 14.11.2026, nur gegen Mocks getestet – Live-Test ausstehend)
+## Stufe 10 – Ökosystem & Intelligenz (gebaut 14.11.2026, live lesend geprüft – Schreiben ausstehend)
 
 Pakete und Status: [docs/PLAN.md](docs/PLAN.md#stufe-10--ökosystem--intelligenz).
 

@@ -41,7 +41,7 @@ Drei Schichten:
 
 ## Harte Regeln
 - **Kein Passwort sehen, eingeben oder loggen.** Zugangsdaten nur über Schlüsselbund → Startskript → Umgebung (`FRITZ_HOST`, `FRITZ_USER`, `FRITZ_PASSWORD`/`FRITZ_PASSWORD_FILE`). Nie als CLI-Argument.
-- **Schreib-/kritische Aktionen gegen die echte Box nur nach Toms ausdrücklicher Freigabe.** Neustart/Reconnect/Werksreset/Löschen nie eigenmächtig. Der MCP ist in Claude Code nur lesend eingebunden; Schreibrechte (`FRITZ_ALLOW_WRITE=1`) nur nach Toms Freigabe.
+- **Schreib-/kritische Aktionen gegen die echte Box nur nach Toms ausdrücklicher Freigabe.** Neustart/Reconnect/Werksreset/Löschen nie eigenmächtig.
 - Geräte nie per Browser-Schleife umbenennen (am 14.11. ging das schief: SPA lud asynchron, Namen landeten beim falschen Gerät). Immer per MAC über den MCP, danach gegenprüfen.
 - **Commits: Englisch, Conventional Commits** (`feat:`, `fix:`, `docs:`, `refactor:`, `perf:`, `test:`, `build:`, `ci:`, `chore:`, `revert:`, `style:`; `!`/`BREAKING CHANGE:` für Breaking Changes) – geprüft vom commit-msg-Hook und (PR-Titel, Squash-Merge) in CI.
 - **Commits, PRs, Issues: KEINE Co-Authored-By-Zeilen, KEINE Hinweise auf Claude/AI** (Toms ausdrücklicher Wunsch).
