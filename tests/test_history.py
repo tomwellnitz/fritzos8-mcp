@@ -32,6 +32,8 @@ class Box:
             {"NewHostName": "pc", "NewIPAddress": "192.0.2.20", "NewMACAddress": "AA:BB:CC:00:00:01", "NewActive": True}
         ]
         self.crc = 10
+        self.down = 100000
+        self.up = 40000
 
     def responses(self) -> dict[tuple[str, str], Any]:
         return {
@@ -39,11 +41,11 @@ class Box:
                 "NewConnectionStatus": "Connected",
                 "NewUptime": self.uptime,
             },
-            ("WANDSLInterfaceConfig1", "GetInfo"): {
+            ("WANDSLInterfaceConfig1", "GetInfo"): lambda: {
                 "NewEnable": "1",
                 "NewStatus": "Up",
-                "NewDownstreamCurrRate": 100000,
-                "NewUpstreamCurrRate": 40000,
+                "NewDownstreamCurrRate": self.down,
+                "NewUpstreamCurrRate": self.up,
                 "NewDownstreamNoiseMargin": 85,
                 "NewUpstreamNoiseMargin": 70,
                 "NewDownstreamAttenuation": 120,
@@ -100,6 +102,31 @@ def test_events_reconnect_resync_devices(landevices: LanDeviceClient, tmp_path: 
     assert [e["kind"] for e in r["events"]] == ["device_offline"]
     s = hist.summary(hours=1)
     assert s["event_counts"] == {"wan_reconnect": 1, "device_online": 1, "device_offline": 1}
+
+
+def test_small_sync_rate_drift_is_not_a_resync(landevices: LanDeviceClient, tmp_path: Path) -> None:
+    # Regression (live 7583/8.26): rate adaptation by a few 100 kbit/s every 30 min was logged as "dsl_resync"
+    hist, clock, box = setup(landevices, tmp_path)
+    hist.collect()
+    for down in (100050, 99950, 100070):  # < 1 %, uptime keeps running
+        clock.t += 300
+        box.uptime += 300
+        box.down = down
+        assert hist.collect()["events"] == []
+    clock.t += 300
+    box.uptime += 300
+    box.down = 80000  # real drop by 20 %
+    assert [e["kind"] for e in hist.collect()["events"]] == ["dsl_resync"]
+
+
+def test_sync_change_with_reconnect_is_a_resync(landevices: LanDeviceClient, tmp_path: Path) -> None:
+    hist, clock, box = setup(landevices, tmp_path)
+    hist.collect()
+    clock.t += 300
+    box.uptime = 20  # reconnect
+    box.down = 100010  # tiny change, but together with a reconnect
+    kinds = [e["kind"] for e in hist.collect()["events"]]
+    assert kinds == ["wan_reconnect", "dsl_resync"]
 
 
 def test_unchanged_counter_skips_host_list(landevices: LanDeviceClient, tmp_path: Path) -> None:
