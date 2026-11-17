@@ -426,6 +426,69 @@ def test_speedtest_run_refuses_when_server_off(landevices: LanDeviceClient) -> N
     assert not any(c[1] in {"ResetStatistics", "SetConfig"} for c in fc.calls)
 
 
+class SpeedtestBox:
+    """X_AVM-DE_Speedtest1 with state: SetConfig changes GetInfo (unless the box ignores it)."""
+
+    def __init__(self, *, ignore_set: bool = False, wan_tcp: str = "0") -> None:
+        self.info = {**ST_INFO, "NewEnableTcp": "0", "NewWANEnableTcp": wan_tcp}
+        self.ignore_set = ignore_set
+
+    def set_config(self, **kw: Any) -> dict[str, Any]:
+        if not self.ignore_set:
+            for k, v in kw.items():
+                self.info[k] = str(v)
+        return {}
+
+    def fc(self) -> FakeFC:
+        return FakeFC(
+            {
+                ("X_AVM-DE_Speedtest1", "GetInfo"): lambda: dict(self.info),
+                ("X_AVM-DE_Speedtest1", "GetStatistics"): ST_STATS,
+                ("X_AVM-DE_Speedtest1", "SetConfig"): self.set_config,
+            }
+        )
+
+
+def _ok_sender(host: str, port: int, seconds: float) -> dict[str, Any]:
+    return {"bytes_sent": 125_000_000, "duration_s": 10.0, "error": None}
+
+
+def test_speedtest_run_enables_temporarily_and_restores(landevices: LanDeviceClient) -> None:
+    box = SpeedtestBox(wan_tcp="1")  # internet flag must be passed through unchanged, never touched
+    fc = box.fc()
+    svc = make_service(landevices, fc)
+    svc.connectivity.probes = Probes(sender=_ok_sender)
+    r = svc.connectivity.box_speedtest_run(10, enable_temporarily=True)
+    sets = [c[2] for c in fc.calls if c[1] == "SetConfig"]
+    assert [x["NewEnableTcp"] for x in sets] == [1, 0]
+    assert all(x["NewWANEnableTcp"] == 1 and x["NewWANEnableUdp"] == 0 for x in sets)
+    assert r["verified"] is True and r["temporary_server"]["restored"]["ok"] is True
+    assert box.info["NewEnableTcp"] == "0" and "warning" not in r
+
+
+def test_speedtest_run_restores_even_if_measurement_fails(landevices: LanDeviceClient) -> None:
+    box = SpeedtestBox()
+    svc = make_service(landevices, box.fc())
+
+    def boom(host: str, port: int, seconds: float) -> dict[str, Any]:
+        raise RuntimeError("abgebrochen")
+
+    svc.connectivity.probes = Probes(sender=boom)
+    with pytest.raises(RuntimeError):
+        svc.connectivity.box_speedtest_run(5, enable_temporarily=True)
+    assert box.info["NewEnableTcp"] == "0"
+
+
+def test_speedtest_run_reports_when_box_ignores_enable(landevices: LanDeviceClient) -> None:
+    box = SpeedtestBox(ignore_set=True)
+    fc = box.fc()
+    svc = make_service(landevices, fc)
+    svc.connectivity.probes = Probes(sender=_ok_sender)
+    with pytest.raises(FritzError, match="nicht eingeschaltet"):
+        svc.connectivity.box_speedtest_run(5, enable_temporarily=True)
+    assert not any(c[1] == "ResetStatistics" for c in fc.calls)
+
+
 def test_speedtest_run_needs_write_and_valid_seconds(landevices: LanDeviceClient) -> None:
     with pytest.raises(TierDisabledError):
         make_service(landevices, FakeFC(), write=False).connectivity.box_speedtest_run(5)

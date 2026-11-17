@@ -10,13 +10,14 @@ client sends to it:
 - ``GetStatistics`` → ``NewByteCount``, ``NewKbitsCurrent``, ``NewKbitsAvg`` (kbit/s), ``NewPacketCount``,
   ``NewPPSCurrent``, ``NewPPSAvg`` – "only incoming packets to the FRITZ!Box on the specific speedtest
   ports are counted"
-- ``ResetStatistics``; ``SetConfig`` (enable flags) – deliberately NOT used: we never switch the server
-  on (and never the internet-facing variant).
+- ``ResetStatistics``; ``SetConfig`` (``NewEnableTcp``, ``NewEnableUdp``, ``NewEnableUdpBidirect``,
+  ``NewWANEnableTcp``, ``NewWANEnableUdp``) – only used with ``enable_temporarily``: switches on the LAN TCP
+  server for one measurement and writes all five flags back afterwards. The internet-facing flags are
+  always passed through unchanged, never switched on.
 
-``run`` therefore measures client → box throughput (this machine's LAN/WLAN upload to the box): reset the
-counters, send TCP data to ``NewPortTcp`` for a few seconds, read the box statistics. Only possible when
-the TCP speed-test server is already enabled. There is no TR-064 action that starts an internet speed
-test on the box.
+``run`` measures client → box throughput (this machine's LAN/WLAN upload to the box): reset the counters,
+send TCP data to ``NewPortTcp`` for a few seconds, read the box statistics. There is no TR-064 action that
+starts an internet speed test on the box.
 """
 
 from __future__ import annotations
@@ -82,6 +83,17 @@ def parse_info(r: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def config_args(info: dict[str, Any], *, lan_tcp: bool | None = None) -> dict[str, int]:
+    """SetConfig arguments from parse_info(); optionally with LAN TCP overridden (WAN flags always as read)."""
+    return {
+        "NewEnableTcp": int(info["lan_tcp_enabled"] if lan_tcp is None else lan_tcp),
+        "NewEnableUdp": int(info["lan_udp_enabled"]),
+        "NewEnableUdpBidirect": int(info["lan_udp_bidirect_enabled"]),
+        "NewWANEnableTcp": int(info["internet_tcp_enabled"]),
+        "NewWANEnableUdp": int(info["internet_udp_enabled"]),
+    }
+
+
 def parse_statistics(r: dict[str, Any]) -> dict[str, Any]:
     return {
         "bytes": _int(r.get("NewByteCount")),
@@ -100,10 +112,7 @@ class SpeedtestClient:
         self._sender = sender
 
     def info(self) -> dict[str, Any]:
-        r = self.tr064.try_call(SERVICE, "GetInfo")
-        if r is None:
-            raise NotFoundError("Speedtest-Service (X_AVM-DE_Speedtest) gibt es auf dieser Box nicht.")
-        info = parse_info(r)
+        info = self._read_info()
         stats = self.tr064.try_call(SERVICE, "GetStatistics")
         warnings = []
         if info["internet_tcp_enabled"] or info["internet_udp_enabled"]:
@@ -118,21 +127,64 @@ class SpeedtestClient:
             "warnings": warnings,
             "what_this_is": "Speedtest-SERVER der Box für Messungen aus dem Heimnetz (zählt nur bei der Box "
             "eingehende Daten). Kein Internet-Speedtest – den bietet TR-064 nicht.",
-            "source": "TR-064 X_AVM-DE_Speedtest1 (AVM-Doku v3, 2025-08-08); live noch nicht geprüft",
+            "source": "TR-064 X_AVM-DE_Speedtest1 (AVM-Doku v3, 2025-08-08); live geprüft an 7583/8.26 und 6660/8.25",
         }
 
-    def run(self, seconds: float = 10.0) -> dict[str, Any]:
+    def _read_info(self) -> dict[str, Any]:
+        r = self.tr064.try_call(SERVICE, "GetInfo")
+        if r is None:
+            raise NotFoundError("Speedtest-Service (X_AVM-DE_Speedtest) gibt es auf dieser Box nicht.")
+        return parse_info(r)
+
+    def run(self, seconds: float = 10.0, enable_temporarily: bool = False) -> dict[str, Any]:
         if not 1 <= seconds <= MAX_SECONDS:
             raise InvalidParameterError(f"seconds muss 1–{MAX_SECONDS} sein.")
         info = self.info()
         port = info["port_tcp"]
-        if not info["lan_tcp_enabled"] or not port:
-            raise FritzError(
-                "Der TCP-Speedtest-Server der Box ist aus – es wird nichts gemessen und nichts umgestellt.",
-                hint="Erst in der Web-UI den Speedtest (TCP, nur Heimnetz) einschalten, dann erneut ausführen.",
-            )
+        if not port:
+            raise FritzError("Die Box meldet keinen TCP-Port für den Speedtest-Server – es wird nichts gemessen.")
+        temporary: dict[str, Any] | None = None
+        if not info["lan_tcp_enabled"]:
+            if not enable_temporarily:
+                raise FritzError(
+                    "Der TCP-Speedtest-Server der Box ist aus – es wird nichts gemessen und nichts umgestellt.",
+                    hint="Mit enable_temporarily=true schaltet das Tool ihn nur für diese Messung ein "
+                    "(TCP, nur Heimnetz) und danach wieder aus.",
+                )
+            before = config_args(info)
+            self.tr064.call(SERVICE, "SetConfig", **config_args(info, lan_tcp=True))
+            if not self._read_info()["lan_tcp_enabled"]:
+                self.tr064.call(SERVICE, "SetConfig", **before)
+                raise FritzError(
+                    "Die Box hat den TCP-Speedtest-Server nicht eingeschaltet – es wurde nichts gemessen.",
+                    hint="Ausgangszustand wurde zurückgeschrieben.",
+                )
+            temporary = {"enabled": True, "before": before}
+        try:
+            result = self._measure(seconds, int(port))
+        finally:
+            if temporary is not None:
+                temporary["restored"] = self._restore(temporary["before"])
+        if temporary is not None:
+            result["temporary_server"] = temporary
+            if not temporary["restored"]["ok"]:
+                result["warning"] = (
+                    "Speedtest-Server konnte nicht in den Ausgangszustand zurückgestellt werden – "
+                    "bitte box_speedtest_info prüfen."
+                )
+        return result
+
+    def _restore(self, before: dict[str, int]) -> dict[str, Any]:
+        try:
+            self.tr064.call(SERVICE, "SetConfig", **before)
+            after = config_args(self._read_info())
+        except FritzError as exc:
+            return {"ok": False, "error": str(exc)}
+        return {"ok": after == before, "after": after}
+
+    def _measure(self, seconds: float, port: int) -> dict[str, Any]:
         self.tr064.call(SERVICE, "ResetStatistics")
-        client = self._sender(self._host(), int(port), float(seconds))
+        client = self._sender(self._host(), port, float(seconds))
         stats_raw = self.tr064.try_call(SERVICE, "GetStatistics")
         stats = parse_statistics(stats_raw) if stats_raw is not None else None
         duration = client.get("duration_s") or 0
@@ -148,6 +200,7 @@ class SpeedtestClient:
             "box_counted_mbit_s": None if not box_bytes or not duration else round(box_bytes * 8 / duration / 1e6, 2),
             "verified": verified,
             "note": "Box-Zählung = Daten, die bei der Box angekommen sind; Client-Wert = gesendete Daten. "
-            "Große Abweichung deutet auf Verluste oder Puffer hin. Unverifiziert: Protokoll des Box-Servers "
-            "(reines Senden auf den TCP-Port) ist nicht dokumentiert.",
+            "Große Abweichung deutet auf Verluste oder Puffer hin. Reines Senden auf den TCP-Port ist nicht "
+            "dokumentiert, wird live aber gezählt (7583/8.26, 6660/8.25). Über VPN gemessen zeigt der Wert "
+            "den VPN-Weg, nicht das Heimnetz.",
         }

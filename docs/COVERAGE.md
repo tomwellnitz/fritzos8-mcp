@@ -19,9 +19,9 @@ Ergebnis der Prüfung von Annahmen im Code und des Denylist-Abgleichs: [PLAN „
 
 | Bereich | Umfang | ✅ kuratiert | 🟡 nur generisch | ❌ fehlt | ⛔ gesperrt |
 |---|---|---|---|---|---|
-| TR-064 gesamt (37 Services) | 375 Actions | 150 (40,0 %) | 72 (19,2 %) | 86 (22,9 %) | 67 (17,9 %) |
+| TR-064 gesamt (37 Services) | 375 Actions | 151 (40,3 %) | 72 (19,2 %) | 85 (22,7 %) | 67 (17,9 %) |
 | TR-064 lesend (Get*) | 201 | 113 (56,2 %) | 72 (35,8 %) | 0 | 16 (8,0 %) |
-| TR-064 schreibend | 174 | 37 (21,3 %) | – | 86 (49,4 %) | 51 (29,3 %) |
+| TR-064 schreibend | 174 | 38 (21,8 %) | – | 85 (48,9 %) | 51 (29,3 %) |
 | AHA-HTTP-Interface | 36 Kommandos | 16 (44 %) | 9 (25 %) indirekt¹ | 11 (31 %) | 0 |
 | Smart-Home-REST FRITZ!OS 8.2 | 36 Endpunkte | 21 (58 %) | – | 13 (36 %) | 2 (6 %)² |
 | Smart-Home-REST FRITZ!OS 8.5 | 52 Endpunkte | 23 (44 %) | – | 20 (38 %) | 9 (17 %)² |
@@ -68,7 +68,7 @@ Zusätzlich genutzt, aber nicht TR-064: IGD-Actions (UPnP, Doku „Internet Gate
 | X_AVM-DE_Media1 | 5 | 1 | 2 | 1 | 1 | 100 % |
 | X_AVM-DE_MyFritz1 | 6 | 3 | 0 | 2 | 1 | 100 % |
 | X_AVM-DE_RemoteAccess1 | 7 | 3 | 0 | 2 | 2 | 67 % |
-| X_AVM-DE_Speedtest1 | 4 | 3 | 0 | 1 | 0 | 100 % |
+| X_AVM-DE_Speedtest1 | 4 | 4 | 0 | 0 | 0 | 100 % |
 | X_AVM-DE_Storage1 | 7 | 5 | 0 | 1 | 1 | 100 % |
 | X_AVM-DE_TAM1 | 6 | 6 | 0 | 0 | 0 | 100 % |
 | X_AVM-DE_UPnP1 | 2 | 1 | 0 | 1 | 0 | 100 % |
@@ -592,12 +592,12 @@ Zusätzlich genutzt, aber nicht TR-064: IGD-Actions (UPnP, Doku „Internet Gate
 
 ### X_AVM-DE_Speedtest1
 
-4 Actions · ✅ 3 · 🟡 0 · ❌ 1 · ⛔ 0
+4 Actions · ✅ 4 · 🟡 0 · ❌ 0 · ⛔ 0
 
 | Action | R/W | Recht (Doku) | Abdeckung | Status |
 |---|---|---|---|---|
 | `GetInfo` | R | – | box_speedtest_info | ✅ |
-| `SetConfig` | W | – | noch nicht gebaut (Netz-/Zugangsrisiko, siehe Kandidaten) | ❌ |
+| `SetConfig` | W | – | box_speedtest_run (`enable_temporarily`: nur LAN-TCP, WAN-Schalter unverändert, danach Rückstellung) | ✅ |
 | `GetStatistics` | R | – | box_speedtest_info/_run | ✅ |
 | `ResetStatistics` | W | – | box_speedtest_run | ✅ |
 
