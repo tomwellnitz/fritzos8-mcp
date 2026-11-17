@@ -32,7 +32,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 - **Stufe 2:** Feldnamen von `X_AVM-DE_GetWPSInfo`, ob Web-UI-Portfreigaben im WAN-Portmapping erscheinen.
 - **Stufe 3:** `<New>`-Semantik der AB-Liste (V-9), Felder von `/api/v0/generic/dnscfg` und `/ipv6` für einen Schreibweg, Fehlercode bei nicht erlaubten selbstständigen Portfreigaben.
 - **Stufe 4:** Log-Muster des Netz-Doktors, `BeaconType`-Werte für WPA3, Feldwert Auto-Update, Einheit von `ds_current_bps` (V-22). Belegt (16.11., Box A): „zuletzt online“ kommt als Feld `lastused`; das Alter blieb bei den vorgeschlagenen Einträgen trotzdem leer (`last_seen_days: null`).
-- **Stufe 6:** Green-Mode-Wert (daher kein `set_lan_power_mode`), LAN-Log-Muster, Einheit von PLC-PHY-Raten, Verhalten des Box-Speedtest-Servers.
+- **Stufe 6:** Green-Mode-Wert (daher kein `set_lan_power_mode`), LAN-Log-Muster, Einheit von PLC-PHY-Raten.
 - **Stufe 7:** `NightControl`-XML, Einheiten der Filterprofil-Budgets; ob ein Gerät im Gastnetz dieselbe Gast-ID meldet wie Standard-Geräte im Heimnetz.
 - **AVM-Doku-Abgleich:** V-7 (`WANIPConn1` ist die IGD-ID, TR-064 = `WANIPConnection1`), V-8 (TR-064-Portfreigabe nur für den eigenen Rechner), V-11 (Einheit Gast-Timeout).
 
@@ -44,7 +44,7 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
    - `devices_cleanup_report`/`_plan`: an Box A erledigt für den Report (16.11.: VPN-Peer und Powerline nicht vorgeschlagen, `vpn_list_checked: true`); offen: `_plan` sowie Box B – keine Hersteller-MAC-Geräte ohne Alter unter `delete_candidates`, IP-Duplikate nur `info` (Box B)
    - Sitzungsablauf: `smarthome_list_devices`/`smarthome_overview` nach > 20 min Leerlauf ohne Fehler (Box B)
    - Box-Grenzen, kein Nachtest nötig: `line_diagnostics` an Kabel (`unknown`), `devices_change_counter` = 0 an Box A
-2. **Restliche Live-Tests:** TR-064-Antwort bei 2FA, `wake_on_lan` an einem Gerät mit aktivem WoL, AB-Nachricht markieren (V-9, braucht eine Nachricht), Rufumleitung (braucht eine), Box-Speedtest (Server muss in der Web-UI an sein). Bewusst nur mit Tom: Fernzugriff an/aus, WLAN-Band aus, WPS, Anrufe, Neustart/Reconnect/Firmware, Smart-Home anlernen/löschen.
+2. **Restliche Live-Tests:** TR-064-Antwort bei 2FA, `wake_on_lan` an einem Gerät mit aktivem WoL, AB-Nachricht markieren (V-9, braucht eine Nachricht), Rufumleitung (braucht eine). Bewusst nur mit Tom: Fernzugriff an/aus, WLAN-Band aus, WPS, Anrufe, Neustart/Reconnect/Firmware, Smart-Home anlernen/löschen.
 3. **Langzeit-Messreihe:** `fritzos8-collector` ≥ 24 h an beiden Boxen, danach `isp_report` (8.2) und `history_anomalies` (10.1).
 4. **Browser-Mitschnitt** für 7.2/7.3 (DNS/DNSv6, Portfreigaben über die Web-UI) – Checkliste unter Stufe 7; erst danach bauen.
 
@@ -189,13 +189,13 @@ Live zu prüfen (Stufe 6, Priorität absteigend):
 3. `network_doctor(flap_check_seconds=30)` an der 7583 mit dem Pi: findet er Pi+EEE (Mesh-Interface-Name `LAN:n` → Port) und – falls noch EEE an – das Flapping? Treffen die LAN-Log-Muster („LAN-Anschluss … getrennt/verbunden“) echte Meldungen?
 4. `test_my_device` per WLAN und per LAN: plausible Latenz (LAN ~1 ms), DNS-Zeiten, Download; findet `box_view` den Rechner (IP → Host) und liefert `X_AVM-DE_GetWLANConnectionInfo` Werte? `NewX_AVM-DE_SignalStrength` = Prozent?
 5. `device_connection_quality`: Mesh-Feld `name` der Box-Interfaces (`LAN:1`, `AP:5G:0`?), `phymodes`, `max_data_rate_*`; Bewertung plausibel?
-6. `box_speedtest_info`: Service vorhanden, Felder laut AVM-Doku? `box_speedtest_run` nur, wenn der TCP-Speedtest in der Web-UI ohnehin an ist – akzeptiert der Box-Server reines TCP-Senden, zählt `NewByteCount` mit?
+6. `box_speedtest_info`: Service vorhanden, Felder laut AVM-Doku? `box_speedtest_run` – ✅ live 17.11. an 7583 und 6660 mit `enable_temporarily`: reines TCP-Senden wird in `NewByteCount` gezählt, Server danach wieder aus.
 7. `powerline_status` (nur mit Powerline-Adapter): Einheit von `phyRateRX/TX`, Werte von `status`/`coupling`.
 8. `list_port_forwards(include_web_ui_lists=true)`: Struktur von `forwardrules`/`ipv6firewall` → bei sinnvoller Struktur kuratiert auswerten (und in `security_check` einbeziehen).
 
 Bewusst nicht gebaut / offen:
 - **`set_lan_power_mode` (Power/Green Mode):** nur `mode "2"` = Power Mode belegt, der Green-Mode-Wert nicht → erst Browser-Mitschnitt beim Umschalten auf „100 Mbit/s Green Mode“.
-- **Internet-Speedtest der Box:** TR-064 `X_AVM-DE_Speedtest` ist nur der Speedtest-Server der Box (laut AVM-Doku kein Start-Befehl). Den Server per `SetConfig` ein-/ausschalten ist möglich, aber nicht gebaut (Gefahr, die Internet-Variante versehentlich zu öffnen).
+- **Internet-Speedtest der Box:** TR-064 `X_AVM-DE_Speedtest` ist nur der Speedtest-Server der Box (laut AVM-Doku kein Start-Befehl). `box_speedtest_run` schaltet mit `enable_temporarily` nur den LAN-TCP-Server per `SetConfig` kurz ein und stellt danach zurück; die Internet-Schalter werden nie eingeschaltet.
 - `forwardrules`/`ipv6firewall` kuratiert und in `security_check`: erst nach Live-Befund der Struktur.
 - Weitere vorhandene, ungeprüfte `/api/v0`-Endpunkte: `generic/trafficprio`, `generic/connections`, `generic/nexus`, `generic/wlan_light`, `generic/box`, `generic/user`, `generic/providerlist`, `dino/configflags`, `dino/misc/boxname`.
 

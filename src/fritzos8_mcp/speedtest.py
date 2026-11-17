@@ -127,7 +127,7 @@ class SpeedtestClient:
             "warnings": warnings,
             "what_this_is": "Speedtest-SERVER der Box für Messungen aus dem Heimnetz (zählt nur bei der Box "
             "eingehende Daten). Kein Internet-Speedtest – den bietet TR-064 nicht.",
-            "source": "TR-064 X_AVM-DE_Speedtest1 (AVM-Doku v3, 2025-08-08); live noch nicht geprüft",
+            "source": "TR-064 X_AVM-DE_Speedtest1 (AVM-Doku v3, 2025-08-08); live geprüft an 7583/8.26 und 6660/8.25",
         }
 
     def _read_info(self) -> dict[str, Any]:
@@ -200,6 +200,7 @@ class SpeedtestClient:
             "box_counted_mbit_s": None if not box_bytes or not duration else round(box_bytes * 8 / duration / 1e6, 2),
             "verified": verified,
             "note": "Box-Zählung = Daten, die bei der Box angekommen sind; Client-Wert = gesendete Daten. "
-            "Große Abweichung deutet auf Verluste oder Puffer hin. Unverifiziert: Protokoll des Box-Servers "
-            "(reines Senden auf den TCP-Port) ist nicht dokumentiert.",
+            "Große Abweichung deutet auf Verluste oder Puffer hin. Reines Senden auf den TCP-Port ist nicht "
+            "dokumentiert, wird live aber gezählt (7583/8.26, 6660/8.25). Über VPN gemessen zeigt der Wert "
+            "den VPN-Weg, nicht das Heimnetz.",
         }
