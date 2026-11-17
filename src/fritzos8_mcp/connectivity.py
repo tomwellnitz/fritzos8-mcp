@@ -105,9 +105,9 @@ class ConnectivityService:
     def box_speedtest_info(self) -> dict[str, Any]:
         return self.speedtest.info()
 
-    def box_speedtest_run(self, seconds: float = 10.0) -> dict[str, Any]:
+    def box_speedtest_run(self, seconds: float = 10.0, enable_temporarily: bool = False) -> dict[str, Any]:
         self.gate.require(Tier.WRITE)
-        return self.speedtest.run(seconds)
+        return self.speedtest.run(seconds, enable_temporarily)
 
     # ================================================================ connection quality
 
@@ -392,12 +392,18 @@ def register_connectivity_tools(tool: ToolDecorator, svc: Callable[[str | None],
     @tool(Tier.WRITE, _WRITE)
     def box_speedtest_run(
         seconds: Annotated[float, Field(description="Messdauer in Sekunden (1–30)", ge=1, le=30)] = 10,
+        enable_temporarily: Annotated[
+            bool,
+            Field(description="Ist der TCP-Speedtest-Server aus: nur für diese Messung einschalten (nur Heimnetz)"),
+        ] = False,
         box: BoxArg = None,
     ) -> dict[str, Any]:
         """Misst den Durchsatz dieses Rechners ZUR Box (Heimnetz-Upload): setzt die Speedtest-Statistik zurück
-        (ResetStatistics), sendet TCP-Daten an den Speedtest-Port und liest die Box-Zählung. Erzeugt Last;
-        schaltet den Speedtest-Server nie ein (muss bereits aktiv sein)."""
-        return svc(box).box_speedtest_run(seconds)
+        (ResetStatistics), sendet TCP-Daten an den Speedtest-Port und liest die Box-Zählung. Erzeugt Last.
+        Ist der Server aus, bricht es ab – außer mit enable_temporarily: dann schaltet es per SetConfig nur
+        TCP im Heimnetz ein, misst und schreibt danach alle Schalter zurück (Rücklesen in temporary_server).
+        Der Zugang aus dem Internet wird nie eingeschaltet."""
+        return svc(box).box_speedtest_run(seconds, enable_temporarily)
 
     @tool(Tier.READ, _READ)
     def device_connection_quality(

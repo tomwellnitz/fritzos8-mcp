@@ -94,7 +94,7 @@ Rechte: **settings** = FRITZ!Box Einstellungen; **app** = Eingeschränkte FRITZ!
 
 | Tool | Recht | Parameter | Beschreibung |
 |---|---|---|---|
-| `box_speedtest_run` | settings | `seconds?`: number | Misst den Durchsatz dieses Rechners ZUR Box (Heimnetz-Upload): setzt die Speedtest-Statistik zurück (ResetStatistics), sendet TCP-Daten an den Speedtest-Port und liest die Box-Zählung. Erzeugt Last; schaltet den Speedtest-Server nie ein (muss bereits aktiv sein). |
+| `box_speedtest_run` | settings | `seconds?`: number, `enable_temporarily?`: boolean | Misst den Durchsatz dieses Rechners ZUR Box (Heimnetz-Upload): setzt die Speedtest-Statistik zurück (ResetStatistics), sendet TCP-Daten an den Speedtest-Port und liest die Box-Zählung. Erzeugt Last. Ist der Server aus, bricht es ab – außer mit enable_temporarily: dann schaltet es per SetConfig nur TCP im Heimnetz ein, misst und schreibt danach alle Schalter zurück (Rücklesen in temporary_server). Der Zugang aus dem Internet wird nie eingeschaltet. |
 | `call_barring_add` | phone | `number`: string, `name?`: string? | Sperrt eine Rufnummer (TR-064 SetCallBarringEntry) und prüft per GetCallBarringEntryByNum, dass sie in der Rufsperre steht. Schon gesperrt = unverändert. |
 | `call_barring_remove` | phone | `number`: string | Hebt die Sperre einer Rufnummer auf (TR-064 DeleteCallBarringEntryUID) und prüft, dass sie weg ist. |
 | `delete_host` | settings | `mac`: string, `uid?`: string? | Löscht einen inaktiven Geräteeintrag. Lehnt aktive/online und geschützte Einträge ab (Erzwingen nur über delete_host_force_plan/_execute). Prüft danach, ob er weg ist. |
