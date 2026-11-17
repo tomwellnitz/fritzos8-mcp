@@ -157,6 +157,21 @@ class HistoryStore:
 # ------------------------------------------------------------------ sampling
 
 
+# Live 7583/8.26: die Sync-Rate schwankt ohne Resync um wenige 100 kbit/s (Ratenanpassung, < 0,1 %).
+# Als Resync zählt nur eine deutliche Änderung oder eine Änderung zusammen mit einer Neuverbindung.
+RESYNC_MIN_CHANGE = 0.01
+
+
+def _is_resync(last: str, sync: str, events: list[tuple[str, str]]) -> bool:
+    if any(kind in ("wan_reconnect", "wan_down", "wan_up") for kind, _ in events):
+        return True
+    try:
+        pairs = list(zip((float(x) for x in last.split("/")), (float(x) for x in sync.split("/")), strict=True))
+    except ValueError:
+        return True  # unlesbarer Vorwert: lieber melden als verschlucken
+    return any(old <= 0 or abs(new - old) / old > RESYNC_MIN_CHANGE for old, new in pairs)
+
+
 class Sampler:
     """Reads one sample from a box. Every part is optional – a missing part is an error entry, not a failure."""
 
@@ -222,7 +237,7 @@ class Sampler:
                     sample.metrics[f"dsl.err.{name}"] = v
             sync = f"{d.get('down_kbps')}/{d.get('up_kbps')}"
             last = self.store.get_state("dsl.sync")
-            if last is not None and last != sync:
+            if last is not None and last != sync and _is_resync(last, sync, sample.events):
                 sample.events.append(("dsl_resync", f"Sync-Rate {last} → {sync} kbit/s"))
             self.store.set_state("dsl.sync", sync)
 

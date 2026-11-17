@@ -161,7 +161,7 @@ class IspReport:
             lines += [
                 f"- Ausfälle der Internetverbindung: {len(d['outages'])}, zusammen {d['outage_minutes']} min",
                 f"- Neuverbindungen (Verbindungsdauer zurückgesetzt): {d['reconnects']}",
-                f"- DSL-Resynchronisationen (Sync-Rate geändert): {d['dsl_resyncs']}",
+                f"- DSL-Resynchronisationen (Sync-Rate > 1 % geändert oder mit Neuverbindung): {d['dsl_resyncs']}",
             ]
         sd = d["sync_down_mbit"]
         if sd["min"] is not None:
