@@ -82,6 +82,7 @@ class IspReport:
         events = store.events(start, end)
         reconnects = [e for e in events if e[1] == "wan_reconnect"]
         resyncs = [e for e in events if e[1] == "dsl_resync"]
+        reboots = [e for e in events if e[1] == "box_reboot"]
         collection = find_gaps(store.runs(start, end), start, end)
 
         errors: dict[str, float] = {}
@@ -111,11 +112,13 @@ class IspReport:
             "outage_minutes": round(sum(o["minutes"] for o in down), 1),
             "reconnects": len(reconnects),
             "dsl_resyncs": len(resyncs),
+            "box_reboots": len(reboots),
             "error_increase": errors,
             "sync_down_mbit": _range(sync_down, 1000),
             "sync_up_mbit": _range(sync_up, 1000),
             "snr_down_db": _range(snr, 1),
             "tariff_down_mbit": tariff,
+            "is_dsl": bool(sync_down or resyncs),
             "collection": collection,
             "box": {k: (live.get("system") or {}).get(k) for k in ("model", "software_version")},
         }
@@ -161,8 +164,12 @@ class IspReport:
             lines += [
                 f"- Ausfälle der Internetverbindung: {len(d['outages'])}, zusammen {d['outage_minutes']} min",
                 f"- Neuverbindungen (Verbindungsdauer zurückgesetzt): {d['reconnects']}",
-                f"- DSL-Resynchronisationen (Sync-Rate > 1 % geändert oder mit Neuverbindung): {d['dsl_resyncs']}",
+                f"- Neustarts der FRITZ!Box: {d.get('box_reboots', 0)}",
             ]
+            if d.get("is_dsl", True):
+                lines.append(
+                    f"- DSL-Resynchronisationen (Sync-Rate > 1 % geändert oder mit Neuverbindung): {d['dsl_resyncs']}"
+                )
         sd = d["sync_down_mbit"]
         if sd["min"] is not None:
             lines.append(f"- Synchronisierte Rate Download: {sd['min']}–{sd['max']} Mbit/s (Ø {sd['avg']})")
@@ -190,7 +197,7 @@ class IspReport:
         else:
             lines.append("Keine Ausfälle gemessen (siehe Messlücken).")
         lines += ["", "## Ereignisse", ""]
-        relevant = [e for e in events if e[1] in {"wan_down", "wan_up", "wan_reconnect", "dsl_resync"}]
+        relevant = [e for e in events if e[1] in {"box_reboot", "wan_down", "wan_up", "wan_reconnect", "dsl_resync"}]
         if relevant:
             lines += [f"- {_fmt(t)} – {detail or kind}" for t, kind, detail in relevant[-100:]]
         elif insufficient:
@@ -238,8 +245,9 @@ def register_report_tools(tool: ToolDecorator, svc: Callable[[str | None], IspRe
         box: BoxArg = None,
     ) -> dict[str, Any]:
         """Störungsprotokoll für den Provider (Markdown) aus der lokalen Messreihe: Ausfälle mit Dauer, Neuverbindungen,
-        DSL-Resyncs, Fehlerzähler, Sync-Rate vs. Vertragsrate (X_AVM-DE_TariffDataRate), Messlücken, Hinweis auf die
-        Breitbandmessung der BNetzA. Braucht Daten von fritzos8-collector bzw. history_collect."""
+        Box-Neustarts, DSL-Resyncs (nur bei DSL), Fehlerzähler, Sync-Rate vs. Vertragsrate (X_AVM-DE_TariffDataRate),
+        Messlücken, Hinweis auf die Breitbandmessung der BNetzA.
+        Braucht Daten von fritzos8-collector bzw. history_collect."""
         return svc(box).report(date_from, date_to, save)
 
 
