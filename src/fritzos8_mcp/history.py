@@ -162,6 +162,11 @@ class HistoryStore:
 RESYNC_MIN_CHANGE = 0.01
 
 
+# Box-Laufzeit (DeviceInfo NewUpTime): weicht sie um mehr als das ab, gilt das als Neustart. Der Abgleich
+# mit der verstrichenen Zeit erkennt auch Neustarts, die in eine Messlücke fallen.
+REBOOT_TOLERANCE_S = 600
+
+
 def _is_resync(last: str, sync: str, events: list[tuple[str, str]]) -> bool:
     if any(kind in ("wan_reconnect", "wan_down", "wan_up") for kind, _ in events):
         return True
@@ -199,6 +204,20 @@ class Sampler:
     def collect(self) -> Sample:
         sample = Sample(ts=self.now())
         tr = self.service.tr064
+
+        def system() -> None:
+            uptime = _num(tr.system_info().get("uptime_s"))
+            if uptime is None:
+                return
+            sample.metrics["box.uptime_s"] = uptime
+            last = _num(self.store.get_state("box.uptime_s"))
+            last_ts = _num(self.store.get_state("box.uptime_ts"))
+            if last is not None and last_ts is not None:
+                expected = last + max(0.0, sample.ts - last_ts)
+                if uptime < expected - REBOOT_TOLERANCE_S:
+                    sample.events.append(("box_reboot", f"FRITZ!Box neu gestartet (läuft seit {int(uptime)} s)"))
+            self.store.set_state("box.uptime_s", str(uptime))
+            self.store.set_state("box.uptime_ts", str(sample.ts))
 
         def wan() -> None:
             st = tr.wan_connection_status()
@@ -273,6 +292,7 @@ class Sampler:
             if counter is not None:
                 self.store.set_state("hosts.change_counter", str(counter))
 
+        self._part(sample, "system", system)
         self._part(sample, "wan", wan)
         self._part(sample, "dsl", dsl)
         self._part(sample, "throughput", throughput)
@@ -439,7 +459,8 @@ def register_history_tools(tool: ToolDecorator, svc: Callable[[str | None], Hist
     @tool(Tier.READ, READ)
     def history_summary(hours: Hours = 24, box: BoxArg = None) -> dict[str, Any]:
         """Zusammenfassung der lokalen Messreihe: je Messgröße last/min/max/avg (Fehlerzähler mit Zuwachs),
-        Ereignisse (Neuverbindungen, DSL-Resyncs, Geräte online/offline), Messintervall, Lücken, Abdeckung in %."""
+        Ereignisse (Box-Neustarts, Neuverbindungen, DSL-Resyncs, Geräte online/offline), Messintervall, Lücken,
+        Abdeckung in %."""
         return svc(box).summary(hours)
 
 

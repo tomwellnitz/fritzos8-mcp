@@ -33,10 +33,12 @@ class Box:
         ]
         self.crc = 10
         self.down = 100000
+        self.box_uptime: int | None = None  # None: DeviceInfo without NewUpTime (no reboot detection)
         self.up = 40000
 
     def responses(self) -> dict[tuple[str, str], Any]:
         return {
+            ("DeviceInfo1", "GetInfo"): lambda: {"NewModelName": "FRITZ!Box 7583", "NewUpTime": self.box_uptime},
             ("WANIPConnection1", "GetStatusInfo"): lambda: {
                 "NewConnectionStatus": "Connected",
                 "NewUptime": self.uptime,
@@ -127,6 +129,40 @@ def test_sync_change_with_reconnect_is_a_resync(landevices: LanDeviceClient, tmp
     box.down = 100010  # tiny change, but together with a reconnect
     kinds = [e["kind"] for e in hist.collect()["events"]]
     assert kinds == ["wan_reconnect", "dsl_resync"]
+
+
+def test_box_reboot_detected_from_uptime(landevices: LanDeviceClient, tmp_path: Path) -> None:
+    hist, clock, box = setup(landevices, tmp_path)
+    box.box_uptime = 50_000
+    hist.collect()
+    clock.t += 300
+    box.box_uptime += 300
+    assert hist.collect()["events"] == []  # uptime runs with the clock
+    clock.t += 300
+    box.box_uptime = 120  # restarted
+    box.uptime = 60  # WAN came up after the restart
+    r = hist.collect()
+    assert [e["kind"] for e in r["events"]] == ["box_reboot", "wan_reconnect"]
+    assert r["metrics"]["box.uptime_s"] == 120
+
+
+def test_box_reboot_detected_across_measurement_gap(landevices: LanDeviceClient, tmp_path: Path) -> None:
+    # uptime grew, but by far less than the elapsed time: restarted while the collector was not running
+    hist, clock, box = setup(landevices, tmp_path)
+    box.box_uptime = 100
+    hist.collect()
+    clock.t += 86_400
+    box.box_uptime = 5_000
+    assert "box_reboot" in [e["kind"] for e in hist.collect()["events"]]
+
+
+def test_long_gap_without_reboot_is_quiet(landevices: LanDeviceClient, tmp_path: Path) -> None:
+    hist, clock, box = setup(landevices, tmp_path)
+    box.box_uptime = 100
+    hist.collect()
+    clock.t += 86_400
+    box.box_uptime = 100 + 86_400 - 30  # slight drift, no restart
+    assert hist.collect()["events"] == []
 
 
 def test_unchanged_counter_skips_host_list(landevices: LanDeviceClient, tmp_path: Path) -> None:

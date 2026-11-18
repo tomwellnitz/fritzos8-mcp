@@ -126,3 +126,27 @@ def test_report_with_too_few_samples_says_so(landevices: LanDeviceClient, tmp_pa
 def test_report_with_enough_samples_is_evaluated(landevices: LanDeviceClient, tmp_path: Path) -> None:
     r = report(landevices, tmp_path).report("2026-11-01", "2026-11-02", save=False)
     assert r["status"] == "evaluated" and "Zu wenig Messdaten" not in r["markdown"]
+
+
+def test_cable_report_has_no_dsl_line_and_lists_box_reboot(landevices: LanDeviceClient) -> None:
+    # Live finding (6660 Cable/8.25): report listed "DSL-Resynchronisationen: 0" and showed a box restart
+    # only as a reconnect
+    fc = FakeFC({("DeviceInfo1", "GetInfo"): {"NewModelName": "FRITZ!Box 6660 Cable"}})
+    svc = make_service(landevices, fc)
+    store = svc.history.sampler.store
+    for i in range(288):
+        events: list[tuple[str, str]] = []
+        if i == 100:
+            events = [("box_reboot", "FRITZ!Box neu gestartet (läuft seit 120 s)"), ("wan_reconnect", "neu")]
+        store.save(Sample(ts=T0 + i * 300, metrics={"wan.connected": 1.0}, events=events), ok=True, duration_s=0.1)
+    r = IspReport(svc, now=lambda: T0 + 86400).report("2026-11-01", "2026-11-02", save=False)
+    md = r["markdown"]
+    assert r["is_dsl"] is False and "DSL-Resynchronisationen" not in md
+    assert r["box_reboots"] == 1 and "Neustarts der FRITZ!Box: 1" in md
+    assert "FRITZ!Box neu gestartet (läuft seit 120 s)" in md
+
+
+def test_dsl_report_keeps_resync_line(landevices: LanDeviceClient, tmp_path: Path) -> None:
+    r = report(landevices, tmp_path).report("2026-11-01", "2026-11-02", save=False)
+    assert r["is_dsl"] is True and "DSL-Resynchronisationen" in r["markdown"]
+    assert "Neustarts der FRITZ!Box: 0" in r["markdown"]
