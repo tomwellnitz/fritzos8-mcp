@@ -95,6 +95,32 @@ def test_rest_smarthome_location_mail_and_dyndns() -> None:
     assert find_leftovers(out) == []
 
 
+def test_mesh_name_references_are_replaced_everywhere() -> None:
+    # Live finding (mesh_overview, 6660 Cable/8.25): node/client names stayed in from/to/connected_to/mesh_master,
+    # as dict keys of clients_per_node and in weak_signal_clients – room names in a public fixture
+    mesh = {
+        "mesh_master": "FritzBoxGartenweg",
+        "nodes": [{"name": "FritzBoxGartenweg"}, {"name": "Repeater-Kinderzimmer"}],
+        "backbone": [{"from": "FritzBoxGartenweg", "to": "Repeater-Kinderzimmer", "type": "WLAN"}],
+        "clients": [{"name": "Sauna-Steckdose", "connected_to": "Repeater-Kinderzimmer", "type": "WLAN"}],
+        "summary": {
+            "clients_per_node": {"FritzBoxGartenweg": 3, "Repeater-Kinderzimmer": 1},
+            "weak_signal_clients": ["Sauna-Steckdose"],
+        },
+        "units": "Raten in Mbit/s",
+        "note": "Sauna-Steckdose im Text bleibt Text",  # no substring replacement
+    }
+    out, _ = anonymize(mesh, kind="rest")
+    dumped = json.dumps(out, ensure_ascii=False)
+    for real in ("FritzBoxGartenweg", "Repeater-Kinderzimmer"):
+        assert real not in dumped
+    assert out["backbone"][0]["from"] == out["nodes"][0]["name"] == out["mesh_master"]
+    assert out["clients"][0]["connected_to"] == out["nodes"][1]["name"]
+    assert set(out["summary"]["clients_per_node"]) == {out["nodes"][0]["name"], out["nodes"][1]["name"]}
+    assert out["summary"]["weak_signal_clients"] == [out["clients"][0]["name"]]
+    assert out["units"] == "Raten in Mbit/s" and out["backbone"][0]["type"] == "WLAN"
+
+
 def test_find_leftovers_flags_real_looking_values() -> None:
     left = find_leftovers(
         {"mac": "3C:22:FB:12:34:56", "ip": "10.0.0.5", "mail": "a@b.de", "ain": "11630 0123456", "v6": "2a02:8070::5"}

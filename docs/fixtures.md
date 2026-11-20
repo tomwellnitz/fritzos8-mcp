@@ -6,7 +6,7 @@ Die Tests laufen ausschließlich gegen Mocks. Je mehr echte (anonymisierte) Antw
 
 Nur **lesende** Abfragen verwenden, z. B.:
 
-- TR-064: Ausgabe von `tr064_call` (z. B. `service="Hosts1", action="GetGenericHostEntry", arguments={"NewIndex": 0}`) als JSON speichern.
+- TR-064: Ausgabe von `tr064_call` (z. B. `service_name="Hosts1", action="GetGenericHostEntry", arguments={"NewIndex": 0}`) als JSON speichern.
 - `/api/v0`: Ausgabe der lesenden Tools (`list_landevices`, `lan_ports`, `smarthome_overview` …) – sie ist bereits zentral geschwärzt.
 - XML (AHA-Geräteliste, Anrufbeantworter-/Anrufliste, Telefonbuch): Inhalt in eine Datei kopieren.
 - Ereignisprotokoll: `system_log` als Text.
