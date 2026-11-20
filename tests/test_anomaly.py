@@ -128,6 +128,55 @@ def test_reconnects_and_device_drops(tmp_path: Path) -> None:
     assert single["severity"] == "info"
 
 
+def _flap_events(start: float) -> Any:
+    """4 days at 5-min steps: A+B drop together 5×/day for one step, C 1×/day, D leaves for hours every day."""
+    a, b, c, d = (f"AA:BB:CC:00:00:{x}" for x in ("A1", "B2", "C3", "D4"))
+
+    def events(t: float) -> list[tuple[str, str]]:
+        step = round((t - start) / 300)
+        in_day = step % 288
+        out: list[tuple[str, str]] = []
+        if step == 0:
+            out += [("device_online", f"Steuerung-{x} ({m})") for x, m in (("A", a), ("B", b), ("C", c), ("D", d))]
+        if in_day in (10, 70, 130, 190, 250):
+            out += [("device_offline", a), ("device_offline", b)]
+        if in_day in (11, 71, 131, 191, 251):
+            out += [("device_online", f"Steuerung-A ({a})"), ("device_online", f"Steuerung-B ({b})")]
+        if in_day == 100:
+            out.append(("device_offline", c))
+        if in_day == 101:
+            out.append(("device_online", f"Steuerung-C ({c})"))
+        if in_day == 20:
+            out.append(("device_offline", d))
+        if in_day == 200:  # back after 15 h → not a short drop
+            out.append(("device_online", f"Steuerung-D ({d})"))
+        return out
+
+    return events
+
+
+def test_chronic_short_drops_reported_together(tmp_path: Path) -> None:
+    # Live finding (6660 Cable/8.25): two PLCs dropped together for one sample 3–8×/day; history_anomalies was silent
+    # because the rate never changed against the baseline
+    store = _store(tmp_path)
+    _fill(store, 4, lambda t: {"wan.connected": 1.0}, step_h=1 / 12, events_fn=_flap_events(NOW - 4 * 86400))
+    r = _detector(store).detect(days=4, recent_hours=24)
+    assert r["checks"]["device_flapping"] == "evaluated"
+    flaps = [f for f in r["findings"] if f["kind"].startswith("device_flapping:")]
+    assert len(flaps) == 1  # A and B in one finding, C (1×/day) and D (long absence) not flagged
+    f = flaps[0]
+    assert {d["name"] for d in f["evidence"]["devices"]} == {"Steuerung-A", "Steuerung-B"}
+    assert "immer gleichzeitig" in f["finding"] and f["severity"] == "info"
+    assert f["evidence"]["devices"][0]["days_with_drops"] >= 2
+
+
+def test_chronic_short_drops_need_two_days(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    _fill(store, 1, lambda t: {"wan.connected": 1.0}, step_h=1 / 12, events_fn=_flap_events(NOW - 86400))
+    r = _detector(store).detect(days=4, recent_hours=12)
+    assert r["checks"]["device_flapping"] == "insufficient_data"
+
+
 def test_parameter_validation(tmp_path: Path) -> None:
     det = _detector(_store(tmp_path))
     with pytest.raises(InvalidParameterError):
