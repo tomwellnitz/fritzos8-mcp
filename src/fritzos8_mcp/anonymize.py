@@ -49,7 +49,7 @@ PHONE_RE = re.compile(r"^\+?[\d *#/()-]{4,30}$")
 _KEY_NAME = re.compile(
     r"(^|_|-)(new)?(host_?name|device_?name|friendly_?name|name|realname|displayname|nickname|"
     r"x_avm-de_friendlyname|devicename|hostname|callername|calledname|caller_name|called_name|phonename|"
-    r"x_avm-de_phonename|alarmclockname|description)$",
+    r"x_avm-de_phonename|alarmclockname|description|mesh_master|connected_to|access_point)$",
     re.I,
 )
 _KEY_SSID = re.compile(r"ssid$", re.I)
@@ -234,6 +234,27 @@ class Anonymizer:
             return self.name(value, "person" if "real" in key.lower() else "name")
         return self.text(value)
 
+    def replace_known_names(self, data: Any) -> Any:
+        """Second pass: a real name that was replaced in a name field also appears elsewhere as a plain reference
+        (mesh_overview: ``from``/``to``, dict keys of ``clients_per_node``, lists like ``weak_signal_clients``).
+        Replace every string value and dict key that equals a known real name exactly – no substring matches."""
+        known: dict[str, str] = {}
+        for kind in ("name", "ssid", "person", "user"):
+            known.update(self._maps.get(kind, {}))
+        if not known:
+            return data
+
+        def walk(value: Any) -> Any:
+            if isinstance(value, dict):
+                return {known.get(k, k) if isinstance(k, str) else k: walk(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [walk(v) for v in value]
+            if isinstance(value, str):
+                return known.get(value, value)
+            return value
+
+        return walk(data)
+
     def obj(self, data: Any) -> Any:
         if isinstance(data, dict):
             return {k: self.value_for_key(str(k), v) for k, v in data.items()}
@@ -249,7 +270,7 @@ def anonymize(data: Any, kind: str = "auto") -> tuple[Any, Anonymizer]:
     a = Anonymizer()
     if isinstance(data, dict | list):
         cleaned = redact_api(data) if kind == "rest" else redact_obj(data)
-        return a.obj(cleaned), a
+        return a.replace_known_names(a.obj(cleaned)), a
     text = str(data)
     if kind in ("xml", "aha") or (kind == "auto" and text.lstrip().startswith("<")):
         return a.xml(text), a
