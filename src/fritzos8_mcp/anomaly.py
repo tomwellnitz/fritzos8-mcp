@@ -12,6 +12,9 @@ Checks (each conservative, phrased as "deutet auf …"):
 * ``error_rate`` – a DSL error counter grows much faster than in the baseline (counter resets are ignored).
 * ``reconnects`` – reconnects/resyncs/WAN-down events are more frequent than in the baseline.
 * ``device_drops`` – devices go offline more often than usual (all devices and per device).
+* ``device_flapping`` – a device drops out briefly (back within minutes) several times a day on several days. This
+  is chronic, not a change, so the baseline comparison above would never flag it. Devices that drop at the same
+  moments are reported together (common switch/port/power supply – or all idle at once).
 
 Too little data is reported as such (``status: insufficient_data``) – never as "alles gut".
 """
@@ -62,6 +65,10 @@ ANOMALY_THRESHOLDS: dict[str, Any] = {
     "device_drops_factor": 2.0,
     "device_drop_single_min": 4,
     "device_drop_single_factor": 3.0,
+    "device_flap_max_minutes": 15,
+    "device_flap_min_per_day": 3,
+    "device_flap_min_days": 2,
+    "device_flap_together_ratio": 0.8,
 }
 
 RECONNECT_EVENTS = ("wan_reconnect", "dsl_resync", "wan_down")
@@ -109,6 +116,7 @@ class AnomalyDetector:
         events = store.events(start, end)
         run("reconnects", lambda: self._reconnects(events, start, split, end, findings))
         run("device_drops", lambda: self._devices(events, start, split, end, findings))
+        run("device_flapping", lambda: self._flapping(events, end, findings))
         evaluated = [k for k, v in checks.items() if v != "insufficient_data"]
         status = "insufficient_data" if not evaluated else ("anomalies" if findings else "ok")
         return {
@@ -392,6 +400,80 @@ class AnomalyDetector:
             )
         return "evaluated"
 
+    def _flapping(self, events: list[tuple[float, str, str]], end: float, out: list[dict[str, Any]]) -> str:
+        t = ANOMALY_THRESHOLDS
+        dev = [e for e in events if e[1] in ("device_offline", "device_online")]
+        if not dev or end - dev[0][0] < t["device_flap_min_days"] * DAY:
+            return "insufficient_data"
+        first = dev[0][0]
+        names: dict[str, str] = {}
+        pending: dict[str, float] = {}  # mac → time it went offline
+        drops: dict[str, list[float]] = {}  # mac → times of short drops
+        for ts, kind, detail in dev:
+            if kind == "device_offline":
+                pending[detail] = ts
+                continue
+            if not (detail.endswith(")") and " (" in detail):
+                continue
+            name, mac = detail[:-1].rsplit(" (", 1)
+            names[mac] = name
+            went = pending.pop(mac, None)
+            if went is not None and ts - went <= t["device_flap_max_minutes"] * 60:
+                drops.setdefault(mac, []).append(went)
+        flagged: dict[str, dict[str, Any]] = {}
+        for mac, times in drops.items():
+            per_day: dict[int, int] = {}
+            for ts in times:
+                day = int((ts - first) // DAY)
+                per_day[day] = per_day.get(day, 0) + 1
+            bad_days = sum(1 for n in per_day.values() if n >= t["device_flap_min_per_day"])
+            if bad_days >= t["device_flap_min_days"]:
+                days_total = max((end - first) / DAY, 1.0)
+                flagged[mac] = {
+                    "mac": mac,
+                    "name": names.get(mac),
+                    "short_drops": len(times),
+                    "per_day": round(len(times) / days_total, 1),
+                    "days_with_drops": bad_days,
+                }
+        # devices dropping at the same moments → one finding per group
+        done: set[str] = set()
+        for mac, d in sorted(flagged.items(), key=lambda kv: -kv[1]["short_drops"]):
+            if mac in done:
+                continue
+            mine = set(drops[mac])
+            group = [mac] + [
+                other
+                for other in flagged
+                if other != mac
+                and other not in done
+                and len(mine & set(drops[other])) >= t["device_flap_together_ratio"] * min(len(mine), len(drops[other]))
+            ]
+            done.update(group)
+            label = ", ".join(flagged[m]["name"] or m for m in group)
+            together = len(group) > 1
+            out.append(
+                self._finding(
+                    "info",
+                    f"device_flapping:{mac}",
+                    f"{'Geräte' if together else 'Gerät'} {label} "
+                    f"{'fallen' if together else 'fällt'} regelmäßig kurz aus: {d['short_drops']}× in "
+                    f"{d['days_with_drops']} Tagen, jeweils nach höchstens {t['device_flap_max_minutes']} min zurück"
+                    + (" – immer gleichzeitig" if together else ""),
+                    "Deutet auf kurze Unterbrechungen (Kabel, Switch, Netzteil, WLAN-Empfang) – oder darauf, dass "
+                    "das Gerät zeitweise keinen Verkehr hat und die Box es kurz als inaktiv führt (häufig bei "
+                    "kabelgebundenen Steuerungen)."
+                    + (" Gleichzeitige Ausfälle sprechen für eine gemeinsame Ursache." if together else ""),
+                    "device_connection_quality für das Gerät ausführen; prüfen, ob andere Geräte am selben "
+                    "Port/Switch zur selben Zeit ausfallen. Fallen sie nicht aus, ist Leerlauf wahrscheinlicher "
+                    "als ein Leitungsproblem.",
+                    devices=[flagged[m] for m in group],
+                )
+            )
+            if len(done) >= 10:
+                break
+        return "evaluated"
+
 
 Days = Annotated[float, Field(description="Betrachteter Zeitraum in Tagen rückwärts (Standard 14)", ge=1, le=366)]
 RecentHours = Annotated[
@@ -404,6 +486,7 @@ def register_anomaly_tools(tool: ToolDecorator, svc: Callable[[str | None], Anom
     def history_anomalies(days: Days = 14, recent_hours: RecentHours = 24, box: BoxArg = None) -> dict[str, Any]:
         """Anomalie-Erkennung auf der lokalen Messreihe (keine Box-Abfrage): schleichende Verschlechterung –
         sinkende DSL-Störabstandsmarge (Trend + Prognose), niedrigere Sync-Rate, schneller wachsende Fehlerzähler,
-        gehäufte Neuverbindungen, häufigere Geräteabbrüche. Vergleicht die letzten recent_hours mit den Tagen davor;
+        gehäufte Neuverbindungen, häufigere Geräteabbrüche, Geräte, die regelmäßig kurz wegfallen.
+        Vergleicht die letzten recent_hours mit den Tagen davor;
         zu wenig Daten = 'insufficient_data'. Befunde erscheinen auch in network_doctor und alarms_check."""
         return svc(box).detect(days, recent_hours)
