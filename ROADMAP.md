@@ -1,6 +1,6 @@
 # Roadmap
 
-## Projektstand & Live-Prüfung (Stand 16.11.2026, abgeglichen mit docs/COMPATIBILITY.md)
+## Projektstand & Live-Prüfung (Stand 20.11.2026, abgeglichen mit docs/COMPATIBILITY.md)
 
 Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box 6660 Cable (FRITZ!OS 8.25, DECT-Heizkörperthermostat). Ergebnis je Tool und Box: [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) – dort mit 🟡 „nachtesten“ markierte Punkte sind die offenen Live-Prüfungen.
 
@@ -12,9 +12,9 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 | 2 | WLAN/Gast, Smart Home (AHA), Diagnose/Security-Check | live lesend an beiden Boxen |
 | 3 | Telefonie, Kindersicherung, Portfreigaben, DNS lesen | live an Box A inkl. Schreiben (Internetsperre, AB an/aus), lesend an Box B; DNS schreiben bewusst nicht gebaut |
 | 4–7 | Aufräum-Assistent, Schnappschüsse, Mehrbox, Netz-Doktor; NAS & Fernzugang; LAN-Ports/VPN/Powerline/Qualität; Box-Schutz, WLAN-Einstellungen, Profile, Elicitation, `outputSchema` | live lesend an beiden Boxen („Live-Lesetest Stufen 4–7“), Korrekturen eingearbeitet und 🟡 nachzutesten; schreibend live (16.11.): Aufräum-Assistent (Umbenennen), `set_nas_protocol`, Kindersicherung (Profil, Ticket) an Box A, `set_lan_eee`, `set_wlan_channel` an Box B; critical live: Tickets verwerfen, FTP aus dem Internet; Fernzugriff und WLAN-Band bewusst nicht; 7.2/7.3 nicht gebaut |
-| 8 | Überwachung & Komfort (8.0–8.12) | live lesend an beiden Boxen; schreibend live (16.11.): Rufsperre, Weckruf an Box A, Thermostat (Soll-Temperatur, Boost) und Gast-WLAN-Sitzung an Box B |
-| 9 | Veröffentlichung, Rechte-Tabelle, Abdeckungspflege | Repo öffentlich seit 14.11.2026 (sauberer Initial-Commit), Releases über release-please |
-| 10 | Ökosystem & Intelligenz | live lesend an beiden Boxen; critical live (16.11.): statische Route, `fritz_apply`, Thermostat-Urlaub/-Sommerzeit/-Umbenennen; IPv6-Pinhole von der Box abgelehnt; Firmware-Update/Anlernen bewusst nicht |
+| 8 | Überwachung & Komfort (8.0–8.12) | live lesend an beiden Boxen; schreibend live (16.11.): Rufsperre, Weckruf an Box A, Thermostat (Soll-Temperatur, Boost) und Gast-WLAN-Sitzung an Box B; Box-Speedtest an beiden Boxen (17.11.); Messreihe mit `fritzos8-collector` 16.–20.11. an beiden Boxen, ausgewertet mit `isp_report`/`history_anomalies` |
+| 9 | Veröffentlichung, Rechte-Tabelle, Abdeckungspflege | Repo öffentlich seit 14.11.2026 (sauberer Initial-Commit), Releases über release-please (zuletzt 0.6.0); Mehrbox in einer Instanz und HTTP-Betrieb mit Token live (20.11.) |
+| 10 | Ökosystem & Intelligenz | live lesend an beiden Boxen; critical live (16.11.): statische Route, `fritz_apply`, Thermostat-Urlaub/-Sommerzeit/-Umbenennen; IPv6-Pinhole von der Box abgelehnt; `fritzos8-anonymize` mit echten Antworten (20.11.); MQTT nicht live (kein Broker); Firmware-Update/Anlernen bewusst nicht |
 
 ### Live verifizierte Schnittstellen (Auszug)
 
@@ -25,6 +25,8 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 - Nachtest an Box A (16.11.2026, lesend): WLAN-Signal in Mesh-Liste (dBm), `test_my_device`-Dienstzuordnung, `myfritz_status`, `vpn_connections`, `online_monitor` (`mode_note`, 64-bit-Volumen über IGD `GetAddonInfos` – V-6 belegt), `isp_report` mit 1 Messpunkt → `insufficient_data`. Mesh-Interface-Namen live: `LAN:n`, `WAN:n` (WAN-Port als LAN), `AP:2G:0`, `AP:5G:0`. Nach den Fixes #33/#34 live bestätigt: Gerät am WAN-Port mit Port-Daten/EEE, `online_monitor.rates.sync` = synchronisierte DSL-Rate (DSL `GetInfo` CurrRate), `rates.attainable` = `Layer1*MaxBitRate`.
 - Schreibtests 16.11.2026 (je hin und zurück, unabhängig zurückgelesen): Box A – Kindersicherungsprofil (mit Web-UI gegengeprüft), Ticket, Rufsperre, Weckruf, FTP, Umbenennen über den Aufräum-Assistenten; Box B – Thermostat-Boost, Gast-WLAN-Sitzung, Autokanal, EEE. Befunde mit Fixes [#38](https://github.com/tomwellnitz/fritzos8-mcp/pull/38), [#39](https://github.com/tomwellnitz/fritzos8-mcp/pull/39), [#40](https://github.com/tomwellnitz/fritzos8-mcp/pull/40).
 - Critical-Tests 16.11.2026 (`confirmed_via: elicitation`, je hin und zurück): Box A – Tickets verwerfen, statische Route (`NewType` Network angenommen, Interface = Standardverbindung), IPv4-Portfreigabe, FTP aus dem Internet, `fritz_apply`; Box B – Tickets verwerfen, Thermostat-Urlaub/-Sommerzeit/-Umbenennen. IPv6-Pinhole abgelehnt (10.6a). Elicitation: Dialog erscheint im Client (auch im Modus ohne Rückfragen); „Nein“ → `declined`, nichts geändert, Token danach ungültig. Befunde mit Fixes [#42](https://github.com/tomwellnitz/fritzos8-mcp/pull/42), [#43](https://github.com/tomwellnitz/fritzos8-mcp/pull/43), [#44](https://github.com/tomwellnitz/fritzos8-mcp/pull/44); Fixes #38–#40 und (nach Release 0.2.2) #42–#44 live bestätigt.
+- Messreihe 16.–20.11.2026 (beide Boxen, 5-min-Intervall): Befunde mit Fixes [#50](https://github.com/tomwellnitz/fritzos8-mcp/pull/50) (Ratenschwankung als Resync), [#54](https://github.com/tomwellnitz/fritzos8-mcp/pull/54) (Box-Neustart erkennen, keine DSL-Zeile bei Kabel), [#56](https://github.com/tomwellnitz/fritzos8-mcp/pull/56) (Geräte, die täglich kurz wegfallen). `X_AVM-DE_Speedtest:SetConfig` live (17.11., [#52](https://github.com/tomwellnitz/fritzos8-mcp/pull/52)): reines TCP-Senden wird gezählt, Server danach wieder aus.
+- 20.11.2026: Mehrbox (stdio) und HTTP-Betrieb (401 ohne/mit falschem Token, 421 bei fremdem Host-Header), Sitzungsablauf an Box B (HTTP 403 nach 22 min → Neu-Login), `fritzos8-anonymize` mit echten Antworten beider Boxen → Fix [#58](https://github.com/tomwellnitz/fritzos8-mcp/pull/58).
 - Per Browser-Mitschnitt an Box A belegt (Stufe 6): `GET eth_ports`, `PUT eth_ports/eth/<UID>` (Body live an Box B belegt: nur `eee_mode` genügt), `eee_mode` 0 = Automatisch / 2 = Aus, `GET vpn` (Schlüssel im Klartext → zentrale Schwärzung), `GET plc`.
 
 ### Unbelegte Annahmen
@@ -38,15 +40,22 @@ Testboxen: **Box A** FRITZ!Box 7583 (FRITZ!OS 8.26, DSL) und **Box B** FRITZ!Box
 
 ### Nächste Schritte (Reihenfolge)
 
-1. **🟡-Punkte aus COMPATIBILITY nachtesten** (Korrekturen aus dem Lesetest sind eingebaut, Details unter „Live-Lesetest Stufen 4–7“/„8–10“):
-   - `mesh_overview`/`device_connection_quality`: WLAN-Signal an Box B (an Box A erledigt 16.11., ebenso Gerät am WAN-Port mit Port-Daten/EEE nach Fix [#33](https://github.com/tomwellnitz/fritzos8-mcp/pull/33); Pi + EEE am WAN-Port nur per Regressionstest geprüft, live nicht – EEE dort bewusst aus)
-   - `isp_report`: Bericht nach ≥ 1 h Collector (beide Boxen); `insufficient_data` bei 1 Messpunkt an Box A erledigt
-   - `devices_cleanup_report`/`_plan`: an Box A erledigt für den Report (16.11.: VPN-Peer und Powerline nicht vorgeschlagen, `vpn_list_checked: true`); offen: `_plan` sowie Box B – keine Hersteller-MAC-Geräte ohne Alter unter `delete_candidates`, IP-Duplikate nur `info` (Box B)
-   - Sitzungsablauf: `smarthome_list_devices`/`smarthome_overview` nach > 20 min Leerlauf ohne Fehler (Box B)
-   - Box-Grenzen, kein Nachtest nötig: `line_diagnostics` an Kabel (`unknown`), `devices_change_counter` = 0 an Box A
-2. **Restliche Live-Tests:** TR-064-Antwort bei 2FA, `wake_on_lan` an einem Gerät mit aktivem WoL, AB-Nachricht markieren (V-9, braucht eine Nachricht), Rufumleitung (braucht eine). Bewusst nur mit Tom: Fernzugriff an/aus, WLAN-Band aus, WPS, Anrufe, Neustart/Reconnect/Firmware, Smart-Home anlernen/löschen.
-3. **Langzeit-Messreihe:** `fritzos8-collector` ≥ 24 h an beiden Boxen, danach `isp_report` (8.2) und `history_anomalies` (10.1).
-4. **Browser-Mitschnitt** für 7.2/7.3 (DNS/DNSv6, Portfreigaben über die Web-UI) – Checkliste unter Stufe 7; erst danach bauen.
+1. **Offene 🟡-Punkte:** `devices_cleanup_plan` an Box B (keine Hersteller-MAC-Geräte ohne Alter unter `delete_candidates`, IP-Duplikate nur `info`); Pi mit EEE am WAN-Port nur per Regressionstest (EEE dort bewusst aus). Box-Grenzen ohne Nachtest: `line_diagnostics` an Kabel (`unknown`), `devices_change_counter` = 0 an Box A.
+2. **Live-Tests, die Tom oder ein Zielgerät brauchen:** TR-064-Antwort bei 2FA, `wake_on_lan` an einem Gerät mit aktivem WoL, AB-Nachricht markieren (V-9, braucht eine Nachricht), Rufumleitung (braucht eine), Box-Neustart in der Messreihe (`box_reboot`, wartet auf den nächsten echten Neustart). Bewusst nur mit Tom: Fernzugriff an/aus, WLAN-Band aus, WPS, Anrufe, Neustart/Reconnect/Firmware, Smart-Home anlernen/löschen.
+3. **Dauerbetrieb der Messreihe:** Unter macOS läuft der Collector nur aus einer Sitzung mit Freigabe „Lokales Netzwerk“ (nohup, übersteht keinen Neustart). Dauerhaft über Docker oder das Home-Assistant-Add-on auf einem Rechner im Heimnetz – dabei MQTT live prüfen.
+4. **Browser-Mitschnitt** für 7.2/7.3 (DNS/DNSv6, Portfreigaben über die Web-UI, Issue [#27](https://github.com/tomwellnitz/fritzos8-mcp/issues/27)) – Checkliste unter Stufe 7; erst danach bauen.
+
+### Kriterien für 1.0
+
+Bis dahin bleibt die Version 0.x (Beta). 1.0 heißt: die öffentliche Schnittstelle (Tool-Namen, Parameter, Ergebnisfelder, Stufen) ist stabil, Änderungen daran sind Breaking Changes.
+
+- [ ] Alle 🟡-Punkte in `docs/COMPATIBILITY.md` erledigt oder als Box-Grenze dokumentiert.
+- [ ] Mindestens ein drittes Modell bzw. eine weitere Anschlussart (z. B. Glasfaser oder LTE) live lesend geprüft – eigene Box oder Community-Bericht.
+- [ ] Jedes Schreib-Tool live hin und zurück geprüft oder ausdrücklich als „bewusst nicht live“ geführt (mit Begründung).
+- [ ] Unbelegte Annahmen oben entweder belegt oder im Tool-Ergebnis als „unverifiziert“ gekennzeichnet.
+- [ ] Messreihe ≥ 14 Tage im Dauerbetrieb (Docker oder HA-Add-on) ohne Ausfall des Collectors; MQTT live.
+- [ ] Verhalten nach einem FRITZ!OS-Update an mindestens einer Box geprüft (`/api/v0` ist undokumentiert).
+- [ ] Doku für Einsteiger einmal von jemand Außenstehendem durchgespielt (Installation bis erster Aufruf).
 
 ## Stufe 1 – Geräte & Netz (v0.1, erledigt)
 

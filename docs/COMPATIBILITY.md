@@ -6,8 +6,8 @@ Welche Modelle und FRITZ!OS-Versionen mit welchem Ergebnis geprüft wurden. „l
 
 | Modell | FRITZ!OS | Anschluss | Stand | Ergebnis |
 |---|---|---|---|---|
-| FRITZ!Box 7583 | 8.26 | DSL/G.fast, PPP, DS-Lite | live 14.–16.11.2026 | Stufen 1–3 inkl. Schreiben (Umbenennen, feste IP aufheben/setzen, Eintrag löschen, Internetsperre, AB an/aus); Stufen 8–10 lesend (siehe unten); Korrekturen aus dem Lesetest eingearbeitet |
-| FRITZ!Box 6660 Cable | 8.25 | Kabel (DOCSIS), öffentliche IPv4, kein IPv6 | live 14.11.2026 | lesend wie oben; Smart-Home-REST mit DECT-Thermostat, Thermostat-Schreibtest (Soll-Temperatur hin/zurück) |
+| FRITZ!Box 7583 | 8.26 | DSL/G.fast, PPP, DS-Lite | live 14.–20.11.2026 | Stufen 1–3 inkl. Schreiben (Umbenennen, feste IP aufheben/setzen, Eintrag löschen, Internetsperre, AB an/aus); Stufen 8–10 lesend (siehe unten); Korrekturen aus dem Lesetest eingearbeitet |
+| FRITZ!Box 6660 Cable | 8.25 | Kabel (DOCSIS), öffentliche IPv4, kein IPv6 | live 14.–20.11.2026 | lesend wie oben; Smart-Home-REST mit DECT-Thermostat, Thermostat-Schreibtest (Soll-Temperatur hin/zurück) |
 
 ## Bereiche je Box
 
@@ -30,14 +30,14 @@ Welche Modelle und FRITZ!OS-Versionen mit welchem Ergebnis geprüft wurden. „l
 | `devices_change_counter` | 🟡 Box liefert dauerhaft 0 → „kein Zähler“ | – |
 | `security_check`, `fritz_export`, `history_collect`, `network_optimizer_suggest`, `call_barring_list` | ✅ | ✅ |
 | `smarthome_overview` (REST) | – (keine Smart-Home-Geräte) | ✅ Thermostat, Standort geschwärzt |
-| `mesh_overview`, `device_connection_quality` (WLAN-Signal) | ✅ nachgetestet (16.11.): alle WLAN-Geräte mit gemessenem dBm aus der Mesh-Liste, keines ohne Signal. Gerät am als LAN genutzten WAN-Port (`WAN:1`) jetzt mit Port-Daten/EEE (Fix [#33](https://github.com/tomwellnitz/fritzos8-mcp/pull/33), live ✅ 16.11.) | 🟡 wie 7583 |
+| `mesh_overview`, `device_connection_quality` (WLAN-Signal) | ✅ nachgetestet (16.11.): alle WLAN-Geräte mit gemessenem dBm aus der Mesh-Liste, keines ohne Signal. Gerät am als LAN genutzten WAN-Port (`WAN:1`) jetzt mit Port-Daten/EEE (Fix [#33](https://github.com/tomwellnitz/fritzos8-mcp/pull/33), live ✅ 16.11.) | ✅ (20.11.): WLAN-Geräte mit gemessenem dBm aus der Mesh-Liste, auch hinter Repeatern und Powerline |
 | `test_my_device` (`box_view.wlan_connection.service`) | ✅ nachgetestet (16.11.): Dienst = `quality.tr064.service` (5 GHz) | – |
-| `isp_report` | 🟡 mit 1 Messpunkt jetzt `insufficient_data` (✅ 16.11.); Bericht nach ≥ 1 h Messreihe noch nachtesten | 🟡 wie 7583 |
+| `isp_report`, `history_summary`, `history_anomalies`, `fritzos8-collector` | ✅ Messreihe 16.–20.11. (5-min-Intervall, Abdeckung 100 % ohne Akkupause): falsche DSL-Resyncs durch Ratenschwankung < 0,1 % → Fix [#50](https://github.com/tomwellnitz/fritzos8-mcp/pull/50); Bericht über 39 h ohne Befund | ✅ Messreihe wie 7583; Box-Neustart nur als Neuverbindung sichtbar und DSL-Zeile im Kabel-Bericht → [#54](https://github.com/tomwellnitz/fritzos8-mcp/pull/54); zwei Steuerungen, die täglich kurz gemeinsam wegfallen, blieben unerkannt → [#56](https://github.com/tomwellnitz/fritzos8-mcp/pull/56) (meldet sie jetzt) |
 | `devices_cleanup_report`/`_plan` | ✅ Report nachgetestet (16.11.): VPN-Peer und Powerline nicht mehr vorgeschlagen, „zuletzt online“ = `lastused`; `_plan` nicht live geprüft | ❌→🟡 98 Geräte: „gleiche IP“ als Duplikat-Löschgrund für echte Geräte mit Hersteller-MAC, „K--chen“-Umbenennung, Hersteller „China“ → Regeln verschärft, nachtesten |
 | `myfritz_status` (`mcp_benutzer_internet`) | ✅ nachgetestet (16.11.): Text und Felder konsistent | – |
 | `online_monitor` | ✅ `mode_note` (G.fast statt „VDSL“) und 64-bit-Volumen über IGD (16.11.). `rates.sync` = synchronisierte DSL-Rate, `rates.attainable` = erreichbare Rate (Fix [#34](https://github.com/tomwellnitz/fritzos8-mcp/pull/34), live ✅ 16.11.: = `line_diagnostics`) | – |
 | `vpn_connections` | ✅ nachgetestet (16.11.): Fehler einer verbundenen Verbindung nur als `last_error` (historisch), keine Schlüssel in der Ausgabe | – |
-| Sitzungsablauf (`/api/v0`, AHA) | – | 🟡 `/api/v0` antwortete HTTP 400 statt 401 → Re-Login (REST + AHA), nachtesten |
+| Sitzungsablauf (`/api/v0`, AHA) | – | ✅ (20.11.): nach 22 min Leerlauf lehnte das AHA-Interface die Sitzung ab (HTTP 403) → automatischer Neu-Login, `smarthome_list_devices`, `smarthome_overview` und `list_landevices` ohne Fehler |
 | Kindersicherung: `set_parental_profile` | ✅ schreibend (16.11., Web-UI gegengeprüft). Box meldet Standard-Geräte mit der Gast-ID `filtprof2`, Gast-Profil für Heimnetz-Geräte abgelehnt → Fix [#40](https://github.com/tomwellnitz/fritzos8-mcp/pull/40) | – |
 | `parental_ticket_create`, `call_barring_add`/`_remove`, `set_alarm_clock`, `set_nas_protocol` (FTP) | ✅ schreibend hin/zurück (16.11.) | – |
 | `devices_cleanup_plan`/`_execute` (Umbenennen) | ✅ schreibend hin/zurück (16.11.) | – |
@@ -51,6 +51,9 @@ Welche Modelle und FRITZ!OS-Versionen mit welchem Ergebnis geprüft wurden. „l
 | `ipv6_pinhole_add` | ❌ von der Box abgelehnt (nicht berechtigt) – keine UPnP-Pinholes per TR-064 in dieser Einstellung | – |
 | Thermostat: `smarthome_holidays`, `smarthome_summer_period`, `smarthome_rename`, Fenster offen | – | ✅ je hin/zurück (16.11.). Urlaub ohne gespeicherte Temperatur → HTTP 400 → Vorabprüfung [#43](https://github.com/tomwellnitz/fritzos8-mcp/pull/43), live bestätigt |
 | `wake_on_lan` | 🟡 Magic Packet gesendet, Zielgerät nicht aufgewacht (Geräteseite unklar) | – |
+| Mehrbox in einer Instanz (`fritzos8-mcp-multi-start.sh`, stdio) | ✅ (20.11.) beide Boxen: 79 Lese-Tools ohne Schreib-Tools (Lese-Stufe), Parameter `box` wählt die Box, unbekannte Box → `invalid_parameter`; `boxes_overview`, `compare_boxes` (alle sechs Aspekte) | ✅ wie 7583 |
+| HTTP-Betrieb (`FRITZ_TRANSPORT=http`) | ✅ (20.11.) Mehrbox über Streamable HTTP: ohne Token Start verweigert; ohne/mit falschem Token 401, fremder Host-Header 421 (DNS-Rebinding-Schutz), mit Token alle Aufrufe ok; Token nicht im Log | ✅ wie 7583 |
+| `fritzos8-anonymize` | ✅ (20.11.) TR-064-Antworten und Protokoll | ✅ (20.11.) `list_landevices`, `smarthome_overview`; `mesh_overview` ließ Gerätenamen in Verweisen stehen → Fix [#58](https://github.com/tomwellnitz/fritzos8-mcp/pull/58) |
 | nicht live getestet (bewusst) | Fernzugriff an/aus, WLAN-Band aus, WPS, Anrufe, Neustart/Reconnect/Firmware, Smart-Home anlernen/löschen, `delete_host_force` | – |
 
 Offene Prüfpunkte je Stufe: `ROADMAP.md` im Repository („Live-Prüfpunkte“).
