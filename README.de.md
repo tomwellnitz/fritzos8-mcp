@@ -4,6 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/fritzos8-mcp)](https://pypi.org/project/fritzos8-mcp/)
 [![License: MIT](https://img.shields.io/github/license/tomwellnitz/fritzos8-mcp)](LICENSE)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16712/badge)](https://www.bestpractices.dev/projects/16712)
+[![tomwellnitz/fritzos8-mcp MCP server](https://glama.ai/mcp/servers/tomwellnitz/fritzos8-mcp/badges/score.svg)](https://glama.ai/mcp/servers/tomwellnitz/fritzos8-mcp)
 
 [English](README.md) · **Deutsch**
 
