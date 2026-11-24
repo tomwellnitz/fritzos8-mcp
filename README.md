@@ -7,6 +7,7 @@
 [![License: MIT](https://img.shields.io/github/license/tomwellnitz/fritzos8-mcp)](LICENSE)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/tomwellnitz/fritzos8-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/tomwellnitz/fritzos8-mcp)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16712/badge)](https://www.bestpractices.dev/projects/16712)
+[![tomwellnitz/fritzos8-mcp MCP server](https://glama.ai/mcp/servers/tomwellnitz/fritzos8-mcp/badges/score.svg)](https://glama.ai/mcp/servers/tomwellnitz/fritzos8-mcp)
 
 **English** · [Deutsch](README.de.md)
 
